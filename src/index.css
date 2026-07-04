@@ -1,0 +1,243 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0
+}
+
+:root {
+    --bg: #111318;
+    --surface: #1c1f2b;
+    --border: #2c2f3f;
+    --accent: #3b82f6;
+    --text: #dde3f0;
+    --muted: #566070;
+}
+
+@media print {
+
+    html,
+    body {
+        display: none !important
+    }
+}
+#kt_footer {
+  bottom:auto;
+  margin-top: auto;
+}
+/* =========================
+   MOBILE RESPONSIVE FIX
+========================= */
+
+@media (max-width: 992px) {
+  .card-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .card-title {
+    width: 100% !important;
+  }
+
+  .card-toolbar {
+    width: 100% !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  /* Search input full width */
+  .form-control.w-455px {
+    width: 100% !important;
+  }
+
+  /* Filter dropdown full width */
+  .card-toolbar .w-200px {
+    width: 100% !important;
+  }
+
+  /* Export button full width on mobile */
+  .card-toolbar .btn {
+    width: 100% !important;
+  }
+
+  /* Table scroll fix */
+  .card-body {
+    overflow-x: auto !important;
+  }
+
+  table {
+    min-width: 400px;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 576px) {
+  .card-header {
+    padding: 10px !important;
+  }
+
+  .card-body {
+    padding: 10px !important;
+  }
+
+  .btn {
+    font-size: 13px !important;
+  }
+
+  input,
+  select {
+    font-size: 14px !important;
+  }
+}
+@media (max-width: 992px) {
+  .card-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .card-title {
+    width: 100% !important;
+  }
+
+  /* Search full width */
+  .form-control.w-455px {
+    width: 100% !important;
+  }
+
+  /* Toolbar row */
+  .card-toolbar {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  /* Filter dropdown */
+  .card-toolbar .w-200px {
+    width: 35% !important;
+    min-width: 110px;
+  }
+
+  /* Export button */
+  .card-toolbar .btn {
+    width: 65% !important;
+    white-space: nowrap;
+    font-size: 13px !important;
+    padding: 10px 12px !important;
+  }
+
+  /* Table scroll fix */
+  .card-body {
+    overflow-x: auto !important;
+  }
+
+  table {
+    min-width: 400px;
+  }
+}
+@media (max-width: 576px) {
+  .card-header {
+    padding: 10px !important;
+  }
+
+  .card-body {
+    padding: 10px !important;
+  }
+
+  .card-toolbar {
+    gap: 6px !important;
+  }
+
+  .card-toolbar .w-200px {
+    width: 38% !important;
+  }
+
+  .card-toolbar .btn {
+    width: 62% !important;
+    font-size: 12px !important;
+    padding: 8px 10px !important;
+  }
+
+  input,
+  select {
+    font-size: 13px !important;
+  }
+}
+/* =========================
+   MOBILE RESPONSIVE FIX
+========================= */
+
+@media (max-width: 768px) {
+
+  /* Header layout */
+  .card-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  /* Search */
+  .card-title {
+    width: 45% !important;
+    margin: 0 !important;
+  }
+
+  .form-control.w-455px {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 12px !important;
+    padding-left: 38px !important;
+    height: 40px !important;
+  }
+
+  /* Toolbar */
+  .card-toolbar {
+    width: 55% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  /* Status dropdown */
+  .card-toolbar .w-200px {
+    width: 40% !important;
+    min-width: 90px !important;
+  }
+
+  .card-toolbar select {
+    height: 40px !important;
+    font-size: 12px !important;
+    padding: 0 10px !important;
+  }
+
+  /* Export button */
+  .card-toolbar .btn {
+    width: 60% !important;
+    height: 40px !important;
+    font-size: 12px !important;
+    padding: 0 10px !important;
+    white-space: nowrap !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* Table scroll */
+  .card-body {
+    overflow-x: auto !important;
+  }
+
+  table {
+    min-width: 500px;
+  }
+}

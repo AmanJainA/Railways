@@ -1,0 +1,60 @@
+{
+  "name": "Railways",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": "https://amanjaina.github.io/Railways/",
+  "dependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@testing-library/user-event": "^13.5.0",
+    "apexcharts": "^5.10.6",
+    "axios": "^1.16.0",
+    "datatables.net": "^2.3.8",
+    "datatables.net-bs5": "^2.3.8",
+    "datatables.net-buttons": "^3.2.6",
+    "datatables.net-buttons-bs5": "^3.2.6",
+    "exceljs": "^4.4.0",
+    "jquery": "^4.0.0",
+    "jszip": "^3.10.1",
+    "mammoth": "^1.12.0",
+    "pdfjs-dist": "^5.7.284",
+    "pdfmake": "^0.3.7",
+    "react": "^19.2.3",
+    "react-apexcharts": "^2.1.0",
+    "react-dom": "^19.2.3",
+    "react-router-dom": "^6.30.2",
+    "react-scripts": "5.0.1",
+    "web-vitals": "^2.1.4",
+    "xlsx": "^0.18.5"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
+  }
+}

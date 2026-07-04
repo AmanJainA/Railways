@@ -1,0 +1,304 @@
+/* ── Hero ─────────────────── */
+.nr-dashboard .nr-hero {
+    background: linear-gradient(135deg, #1b1f2d 0%, #1e3a5f 55%, #0d2137 100%);
+    border-radius: 16px;
+    padding: 36px 40px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 28px;
+}
+.nr-hero .btn{
+    position: relative;
+    z-index: 9999;
+}
+.nr-dashboard .nr-hero::before {
+    content: '';
+    position: absolute;
+    top: -60px;
+    right: -60px;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: rgba(27, 132, 255, .12);
+}
+
+.nr-dashboard .nr-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -80px;
+    left: 22%;
+    width: 340px;
+    height: 180px;
+    border-radius: 50%;
+    background: rgba(23, 198, 83, .08);
+}
+
+.nr-dashboard .nr-hero-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 6px;
+    letter-spacing: -.3px;
+}
+
+.nr-dashboard .nr-hero-sub {
+    font-size: 13.5px;
+    color: rgba(255, 255, 255, .5);
+    margin: 0;
+}
+
+.nr-dashboard .nr-hero-stat {
+    text-align: center;
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, .07);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, .1);
+}
+
+.nr-dashboard .nr-hero-stat .val {
+    display: block;
+    font-size: 26px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+}
+
+.nr-dashboard .nr-hero-stat .lbl {
+    display: block;
+    font-size: 11px;
+    color: rgba(255, 255, 255, .48);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+}
+
+/* ── Category cards ────────── */
+.nr-dashboard .nr-cat-card {
+    display: block;
+    border-radius: 14px;
+    border: 1px solid var(--bs-border-color);
+    padding: 20px 18px;
+    transition: all .22s;
+    text-decoration: none;
+    background: var(--bs-body-bg);
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+}
+
+.nr-dashboard .nr-cat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, .10);
+    border-color: #1b84ff;
+}
+
+.nr-dashboard .nr-cat-card .cat-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.nr-dashboard .nr-cat-card .cat-count {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--bs-heading-color);
+    line-height: 1;
+    display: block;
+}
+
+.nr-dashboard .nr-cat-card .cat-name {
+    font-size: 12.5px;
+    color: var(--bs-text-muted);
+    margin-top: 3px;
+    display: block;
+    font-weight: 500;
+}
+
+.nr-dashboard .nr-cat-card .cat-arrow {
+    opacity: 0;
+    transition: opacity .2s;
+}
+
+.nr-dashboard .nr-cat-card:hover .cat-arrow {
+    opacity: 1;
+}
+
+/* ── Progress ──────────────── */
+.nr-dashboard .nr-prog {
+    height: 7px;
+    border-radius: 4px;
+    background: var(--bs-gray-200);
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.nr-dashboard .nr-prog-bar {
+    height: 100%;
+    border-radius: 4px;
+    width: 0;
+    transition: width 1.2s cubic-bezier(.22, .61, .36, 1);
+}
+
+/* ── Chart card ────────────── */
+.nr-dashboard .chart-card {
+    border-radius: 14px;
+    border: 1px solid var(--bs-border-color);
+    background: var(--bs-body-bg);
+}
+
+.nr-dashboard .chart-card .card-header {
+    border-bottom: 1px solid var(--bs-border-color);
+    padding: 18px 22px;
+}
+
+/* ── Recent file icon ─────── */
+.nr-dashboard .rf-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* ── Quick-access pill ─────── */
+.nr-dashboard .qa-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 40px;
+    border: 1px solid var(--bs-border-color);
+    font-size: 12.5px;
+    font-weight: 500;
+    background: transparent;
+    cursor: pointer;
+    transition: all .18s;
+    color: var(--bs-body-color);
+}
+
+.nr-dashboard .qa-pill:hover {
+    border-color: #1b84ff;
+    color: #1b84ff;
+    background: rgba(27, 132, 255, .06);
+}
+
+/* ── Rail strip ───────────── */
+.nr-dashboard .rail-strip {
+    height: 3px;
+    background: linear-gradient(90deg, #1b84ff, #17c653, #1b84ff);
+    background-size: 200% 100%;
+    animation: railMove 2.5s linear infinite;
+    border-radius: 2px;
+    margin-bottom: 26px;
+}
+
+@keyframes railMove {
+    0% {
+        background-position: 100% 0
+    }
+
+    100% {
+        background-position: -100% 0
+    }
+}
+
+/* ===== MOBILE RESPONSIVE ===== */
+/* Small phones */
+@media screen and (max-width: 374px) {
+  .nr-dashboard .nr-hero {
+    padding: 20px 16px;
+    margin-bottom: 16px;
+  }
+  
+  .nr-dashboard .nr-hero-title {
+    font-size: 18px;
+  }
+  
+  .nr-dashboard .nr-hero-sub {
+    font-size: 11px;
+  }
+  
+  .nr-dashboard .nr-hero-stat {
+    padding: 10px 12px;
+  }
+  
+  .nr-dashboard .nr-hero-stat .val {
+    font-size: 20px;
+  }
+  
+  .nr-dashboard .nr-hero-stat .lbl {
+    font-size: 9px;
+  }
+  
+  .nr-dashboard .nr-cat-card {
+    padding: 14px 12px;
+  }
+  
+  .nr-dashboard .nr-cat-card .cat-count {
+    font-size: 20px;
+  }
+  
+  .nr-dashboard .nr-cat-card .cat-name {
+    font-size: 11px;
+  }
+}
+
+/* Standard phones */
+@media screen and (max-width: 767px) {
+  .nr-dashboard .nr-hero {
+    padding: 24px 20px;
+    margin-bottom: 20px;
+  }
+  
+  .nr-dashboard .nr-hero-title {
+    font-size: 20px;
+  }
+  
+  .nr-dashboard .nr-hero-sub {
+    font-size: 12px;
+  }
+  
+  .nr-dashboard .nr-hero-stat {
+    padding: 12px 14px;
+  }
+  
+  .nr-dashboard .nr-hero-stat .val {
+    font-size: 22px;
+  }
+  
+  .nr-dashboard .nr-hero-stat .lbl {
+    font-size: 10px;
+  }
+  
+  .nr-dashboard .nr-cat-card {
+    padding: 16px 14px;
+  }
+  
+  .nr-dashboard .nr-cat-card .cat-count {
+    font-size: 22px;
+  }
+  
+  .nr-dashboard .qa-pill {
+    font-size: 11px;
+    padding: 6px 12px;
+  }
+}
+
+/* Tablets */
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  .nr-dashboard .nr-hero {
+    padding: 28px 30px;
+  }
+  
+  .nr-dashboard .nr-hero-title {
+    font-size: 22px;
+  }
+}
