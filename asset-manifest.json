@@ -1,18 +1,18 @@
 {
   "files": {
     "main.css": "/Railways/static/css/main.3d5a8ef9.css",
-    "main.js": "/Railways/static/js/main.dcfd0419.js",
+    "main.js": "/Railways/static/js/main.eeefac22.js",
     "static/js/453.ed672af5.chunk.js": "/Railways/static/js/453.ed672af5.chunk.js",
     "static/media/pdf.worker.min.mjs": "/Railways/static/media/pdf.worker.min.1e697aa97511a89afffa.mjs",
-    "static/media/logo-default.svg": "/Railways/static/media/logo-default.6a7130f37d55e90d0b03604c50361630.svg",
-    "static/media/logo-compact.svg": "/Railways/static/media/logo-compact.02fc824bc7b86e97e61a9cdf71e5f032.svg",
+    "static/media/logo-default.svg": "/Railways/static/media/logo-default.104871ae32defc096c21fac311f13a67.svg",
+    "static/media/logo-compact.svg": "/Railways/static/media/logo-compact.691a4eb859798e3a154b70335a581da3.svg",
     "index.html": "/Railways/index.html",
     "main.3d5a8ef9.css.map": "/Railways/static/css/main.3d5a8ef9.css.map",
-    "main.dcfd0419.js.map": "/Railways/static/js/main.dcfd0419.js.map",
+    "main.eeefac22.js.map": "/Railways/static/js/main.eeefac22.js.map",
     "453.ed672af5.chunk.js.map": "/Railways/static/js/453.ed672af5.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.3d5a8ef9.css",
-    "static/js/main.dcfd0419.js"
+    "static/js/main.eeefac22.js"
   ]
 }
