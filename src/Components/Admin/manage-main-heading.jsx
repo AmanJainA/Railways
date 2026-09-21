@@ -70,7 +70,18 @@ const ManageMainHeading = () => {
 
   const remove = async (id) => {
     setSaving(true);
-    const { error } = await supabase.from("main_heading_master").delete().eq("id", id);
+    const { data: deletedRows, error } = await supabase
+      .from("main_heading_master")
+      .delete()
+      .eq("id", id)
+      .select("id");
+
+    if (!error && (!deletedRows || deletedRows.length === 0)) {
+      showAlert("danger", "Delete Failed", "The Main Heading was not deleted. Please refresh and try again.");
+      setDeleteId(null);
+      setSaving(false);
+      return;
+    }
     if (error) showAlert("danger", "Error", error.message);
     else {
       showAlert("success", "Success", "Main Heading deleted.");
