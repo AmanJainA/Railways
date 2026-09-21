@@ -157,7 +157,11 @@ const UserProfiles = () => {
     ).length;
 
     const normalUsers = users.filter(
-        (user) => (user.role || "").toLowerCase() !== "admin"
+        (user) => (user.role || "").toLowerCase() === "user"
+    ).length;
+
+    const subAdminUsers = users.filter(
+        (user) => (user.role || "").toLowerCase() === "subadmin"
     ).length;
 
     // =========================================================
@@ -800,7 +804,7 @@ const UserProfiles = () => {
                                         </div>
 
                                         <div className="fs-6 text-muted">
-                                            Normal Users
+                                            Users
                                         </div>
                                     </div>
 
@@ -1318,6 +1322,10 @@ const UserProfiles = () => {
                                             >
                                                 <option value="user">
                                                     User
+                                                </option>
+
+                                                <option value="subadmin">
+                                                    SubAdmin
                                                 </option>
 
                                                 <option value="admin">
