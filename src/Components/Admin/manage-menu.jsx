@@ -164,7 +164,7 @@ const ManageMenu = () => {
             <div className="table-responsive">
               <table className="table table-row-dashed table-hover align-middle fs-7 mb-0">
                 <thead><tr className="text-muted fw-bold fs-8 text-uppercase bg-light">
-                  <th className="ps-5">#</th><th>Main Heading</th><th>Menu Name</th><th>Created By</th><th>Created Date</th><th className="text-end pe-5">Action</th>
+                  <th className="ps-5">#</th><th>Main Heading</th><th>Menu Name</th><th>Created By</th><th>Created Date</th>{isAdmin && <th className="text-end pe-5">Action</th>}
                 </tr></thead>
                 <tbody>
                   {table.visibleRows.map((r, i) => <tr key={r.id}>
@@ -210,7 +210,7 @@ const ManageMenu = () => {
                       </>)}
                     </td>
                   </tr>)}
-                  {!table.visibleRows.length && <tr><td colSpan="5" className="text-center py-10 text-muted">No menus found for your accessible Main Headings.</td></tr>}
+                  {!table.visibleRows.length && <tr><td colSpan={isAdmin ? 6 : 5} className="text-center py-10 text-muted">No menus found for your accessible Main Headings.</td></tr>}
                 </tbody>
               </table>
             </div>
