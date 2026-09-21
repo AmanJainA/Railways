@@ -121,6 +121,7 @@ const ManageMenu = () => {
       <div className="container-xxl mt-5">
         {alert && <div className={`alert alert-${alert.type} mb-5`}><h4>{alert.title}</h4><span>{alert.message}</span></div>}
 
+        {isAdmin && (
         <div className="card shadow-sm mb-5">
           <div className="card-header"><h3 className="card-title fw-bold">
                 <i className="ki-duotone ki-plus-square fs-2 me-2 text-primary">
@@ -148,6 +149,8 @@ const ManageMenu = () => {
             {!isAdmin && <div className="form-text mt-3">You can view menus under your assigned Main Headings.</div>}
           </div>
         </div>
+
+        )}
 
         <div className="card shadow-sm">
           <div className="card-header d-flex align-items-center justify-content-between">
