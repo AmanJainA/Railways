@@ -79,16 +79,7 @@ const SidebarLayout = ({ children }) => {
   const userInitial = user.charAt(0).toUpperCase();
 
   const userDisplay = user.charAt(0).toUpperCase() + user.slice(1);
-  const restrictedPages = {
-    user: [
-      "studydata", // User cannot access this
-    ],
-  };
-  const hasAccess = (page) => {
-    if (isAdmin) return true;
-
-    return !(restrictedPages.user || []).includes(page);
-  };
+  const hasAccess = () => true;
   // Sync NR accordion when route changes
   useEffect(() => {
     if (currentPath.startsWith("/nr")) {
@@ -124,20 +115,21 @@ const SidebarLayout = ({ children }) => {
 
   // Keep non-admins out of admin-only pages even if they hit the URL directly
   useEffect(() => {
-    if (!isAdmin && (currentPath === "/manageupload" || currentPath === "/pendingapprovals")) {
-      navigate("/nr/dashboard");
-    }
-  }, [isAdmin, currentPath, navigate]);
-
-  useEffect(() => {
-    if (!isAdmin && currentPath === "/nr/display") {
-      const page = sessionStorage.getItem("current_page");
-
-      if (!hasAccess(page)) {
-        navigate(-1);
+    if (currentPath !== "/nr/display" || isAdmin) return;
+    (async () => {
+      try {
+        const allowed = await getAccessibleHeadings();
+        const currentHeadingId = Number(sessionStorage.getItem("current_heading_id"));
+        if (!allowed.some(h => Number(h.id) === currentHeadingId)) {
+          navigate("/nr/dashboard", { replace: true });
+        }
+      } catch (e) {
+        console.error(e);
+        navigate("/nr/dashboard", { replace: true });
       }
-    }
+    })();
   }, [currentPath, isAdmin, navigate]);
+
   // Lock body scroll on mobile when sidebar is open
   useEffect(() => {
     if (mobileOpen) {
@@ -164,8 +156,8 @@ const SidebarLayout = ({ children }) => {
   }, []);
   // Title logic
   let currentTitle =
-    currentPath === "/nr/display" && sessionPage
-      ? sessionTitles[sessionPage] || "Data"
+    currentPath === "/nr/display"
+      ? (sessionStorage.getItem("current_menu_name") || sessionTitles[sessionPage] || "Data")
       : pageTitles[currentPath] || "Dashboard";
   const logPageActivity = async (page = null) => {
 
