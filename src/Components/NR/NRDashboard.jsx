@@ -4,6 +4,7 @@ import "./NRDashboard.css";
 import { useNavigate } from "react-router-dom";
 import Footer from "../Footer/Footer";
 import { supabase } from "../../supabase";
+import { getAccessibleHeadings } from "../Utility/dataAccess";
 export default function NRDashboard() {
   const navigateToMenu = (menuName) => {
     const slug = menuName.toLowerCase().replace(/\s+/g, "");
