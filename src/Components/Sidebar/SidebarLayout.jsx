@@ -4,6 +4,7 @@ import "./SidebarLayout.css";
 import logodefault from "../Assets/logos/logo-default.svg";
 import logominimize from "../Assets/logos/logo-compact.svg";
 import { supabase } from "../../supabase";
+import { getAccessibleHeadings, getAccessibleMenus, setCurrentDataContext } from "../Utility/dataAccess";
 const pageTitles = {
   "/dashboard": "Dashboard",
   "/mydata": "My Data",
@@ -17,7 +18,8 @@ const pageTitles = {
   "/loginhistory": "Login History",
   "/userprofiles": "User Profiles",
   "/uploadfile": "Upload Files",
-  "/nr/dashboard": "NR Dashboard",
+  "/nr/dashboard": "Data Dashboard",
+  "/managemainheading": "Manage Main Heading",
 };
 
 const sessionTitles = {
@@ -428,6 +430,15 @@ const SidebarLayout = ({ children }) => {
                       </Link>
                     </div>
 
+                    {isAdmin && (
+                      <div className="menu-item">
+                        <Link className={`menu-link${currentPath === "/managemainheading" ? " active" : ""}`} to="/managemainheading">
+                          <span className="menu-icon"><i className="ki-duotone ki-category fs-2"><span className="path1"></span><span className="path2"></span></i></span>
+                          <span className="menu-title">Manage Main Heading</span>
+                        </Link>
+                      </div>
+                    )}
+
                     {/* Manage Uploads - ADMIN ONLY */}
                     {isAdmin && (
                       <div className="menu-item">
@@ -518,80 +529,60 @@ const SidebarLayout = ({ children }) => {
                   </div>
                 </div>
 
-                {/* NR Data Accordion */}
-                <div
-                  className={`menu-item menu-accordion mb-1${openNR ? " show" : ""}`}
-                >
-                  <div
-                    className={`menu-link${isNrActive ? " active" : ""}`}
-                    onClick={() => setOpenNR((prev) => !prev)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <span className="menu-icon">
-                      <i className="ki-duotone ki-delivery fs-2">
-                        <span className="path1"></span>
-                        <span className="path2"></span>
-                        <span className="path3"></span>
-                        <span className="path4"></span>
-                      </i>
-                    </span>
-                    <span className="menu-title">NR Data</span>
-                    <span className="menu-arrow"></span>
-                  </div>
-
-                  <div className="menu-sub menu-sub-accordion">
-                    {/* NR Dashboard (direct link) */}
-                    <div className="menu-item">
-                      <Link
-                        className={`menu-link${currentPath === "/nr/dashboard" ? " active" : ""}`}
-                        to="/nr/dashboard"
+                {/* Dynamic Main Heading navigation */}
+                {headings.map((heading) => {
+                  const menus = headingMenus[heading.id] || [];
+                  const isOpen = !!openHeadings[heading.id];
+                  const headingActive = Number(sessionStorage.getItem("current_heading_id")) === Number(heading.id) && currentPath.startsWith("/nr");
+                  return (
+                    <div className={`menu-item menu-accordion mb-1${isOpen ? " show" : ""}`} key={heading.id}>
+                      <div
+                        className={`menu-link${headingActive ? " active" : ""}`}
+                        onClick={() => setOpenHeadings((prev) => ({ ...prev, [heading.id]: !prev[heading.id] }))}
+                        style={{ cursor: "pointer" }}
                       >
-                        <span className="menu-bullet">
-                          <span className="bullet bullet-dot"></span>
-                        </span>
-                        <span className="menu-title">Dashboard</span>
-                      </Link>
+                        <span className="menu-icon"><i className="ki-duotone ki-delivery fs-2"><span className="path1"></span><span className="path2"></span><span className="path3"></span><span className="path4"></span></i></span>
+                        <span className="menu-title">{heading.headingname}</span>
+                        <span className="menu-arrow"></span>
+                      </div>
+                      <div className="menu-sub menu-sub-accordion">
+                        <div className="menu-item">
+                          <button
+                            className={`menu-link w-100${currentPath === "/nr/dashboard" && headingActive ? " active" : ""}`}
+                            style={{ background: "none", border: "none" }}
+                            onClick={() => {
+                              sessionStorage.setItem("current_heading_id", String(heading.id));
+                              sessionStorage.setItem("current_heading_name", heading.headingname);
+                              navigate("/nr/dashboard");
+                            }}
+                          >
+                            <span className="menu-bullet"><span className="bullet bullet-dot"></span></span>
+                            <span className="menu-title">Dashboard</span>
+                          </button>
+                        </div>
+                        {menus.map((menu) => {
+                          const active = currentPath === "/nr/display" && Number(sessionStorage.getItem("current_heading_id")) === Number(heading.id) && Number(sessionStorage.getItem("current_menu_id")) === Number(menu.id);
+                          return (
+                            <div className="menu-item" key={menu.id}>
+                              <button
+                                onClick={async () => {
+                                  setCurrentDataContext(heading, menu);
+                                  await logPageActivity(menu.menuname);
+                                  navigate("/nr/display");
+                                }}
+                                className={`menu-link w-100${active ? " active" : ""}`}
+                                style={{ background: "none", border: "none" }}
+                              >
+                                <span className="menu-bullet"><span className={`bullet bullet-dot${active ? " bg-primary" : ""}`}></span></span>
+                                <span className="menu-title">{menu.menuname}</span>
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-
-                    {/* Dynamic NR items (same order as PHP) */}
-                    {[
-                      "dashboarddesign",
-                      "studydata",
-                      "reports",
-                      "format",
-                      "meeting",
-                      "policy",
-                      "questions",
-                      "researchpaper",
-                      "summarization",
-                      "visitdata",
-                      "letter",
-                    ]
-                      .filter((key) => hasAccess(key))
-                      .map((key) => {
-                        const isActive =
-                          currentPath === "/nr/display" && sessionPage === key;
-                        return (
-                          <div className="menu-item" key={key}>
-                            <button
-                              onClick={() => handleNrNavigation(key)}
-                              className={`menu-link w-100${isActive ? " active" : ""}`}
-                              style={{ background: "none", border: "none" }}
-                            >
-                              <span className="menu-bullet">
-                                <span
-                                  className={`bullet bullet-dot${isActive ? " bg-primary" : ""}`}
-                                ></span>
-                              </span>
-                              <span className="menu-title">
-                                {sessionTitles[key]}
-                              </span>
-                            </button>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
+                  );
+                })}
 
                 <div className="mt-4"></div>
               </div>
