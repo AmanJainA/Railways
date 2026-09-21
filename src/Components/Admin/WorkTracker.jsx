@@ -109,7 +109,13 @@ export default function WorkTracker() {
         .order("id", { ascending: false });
 
       if (error) throw error;
-      setDocuments(docs || []);
+
+      // Files can be linked across multiple menus, but only within the
+      // Main Headings + Menus accessible to the current user.
+      const allowedMenuIds = new Set(ms.map((m) => Number(m.id)));
+      setDocuments(
+        (docs || []).filter((doc) => allowedMenuIds.has(Number(doc.menu_id)))
+      );
     } catch (e) {
       showAlert("danger", "Error", e.message);
     }
@@ -375,10 +381,15 @@ export default function WorkTracker() {
     ? menus
     : menus.filter((m) => Number(m.main_heading_id) === Number(filterHeading));
 
-  const formDocuments = documents.filter((d) =>
-    Number(d.main_heading_id) === Number(form.main_heading_id) &&
-    Number(d.menu_id) === Number(form.menu_id)
-  );
+  // A single Work / Todo can connect files from multiple menus under the
+  // same Main Heading (e.g. Letter + Meeting + Reports).
+  const formDocuments = documents
+    .filter((d) => Number(d.main_heading_id) === Number(form.main_heading_id))
+    .sort((a, b) => {
+      const menuA = (a.menuname || "").localeCompare(b.menuname || "");
+      if (menuA !== 0) return menuA;
+      return (a.name || "").localeCompare(b.name || "");
+    });
 
   const formParentOptions = items.filter((x) =>
     Number(x.main_heading_id) === Number(form.main_heading_id) &&
@@ -486,6 +497,9 @@ export default function WorkTracker() {
 
                 <div className="col-12">
                   <label className="form-label fw-bold">Connected Deliverables / Files</label>
+                  <div className="text-muted fs-7 mb-2">
+                    Select files from multiple accessible menus under this Main Heading. For example, one Work / Todo can contain a Report from Reports and a PPT from Meeting.
+                  </div>
                   <select
                     multiple
                     className="form-select form-select-solid"
@@ -498,7 +512,7 @@ export default function WorkTracker() {
                   >
                     {formDocuments.map((d) => (
                       <option key={d.id} value={d.id}>
-                        {d.name} {d.folder ? `— ${d.folder}` : ""}
+                        {d.menuname ? `[${d.menuname}] ` : ""}{d.name}{d.folder ? ` — ${d.folder}` : ""}
                       </option>
                     ))}
                   </select>
@@ -589,6 +603,7 @@ export default function WorkTracker() {
                               const doc = docById[Number(link.datacollection_id)];
                               return doc ? (
                                 <button key={link.id} type="button" className="btn btn-sm btn-light-primary" onClick={() => openDocument(doc)} title={doc.name}>
+                                  {doc.menuname ? <span className="text-muted me-1">{doc.menuname}:</span> : null}
                                   {doc.name}
                                 </button>
                               ) : null;
