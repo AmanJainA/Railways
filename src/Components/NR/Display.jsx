@@ -395,16 +395,18 @@ export default function Display({ page }) {
           x.classList.remove("active"),
         );
         a.classList.add("active");
-        activeFolderRef.current = folder;
-        sessionStorage.setItem("activeTab_" + page, folder);
-        fetchData(folder, token);
+        activeFolderRef.current = String(folderId);
+        sessionStorage.setItem("activeTab_" + page, String(folderId));
+        fetchData(String(folderId), token);
       };
       li.appendChild(a);
       return li;
     };
 
     ul.appendChild(makeTab("All", "all", "ki-folder-open"));
-    folders.forEach((f) => ul.appendChild(makeTab(f, f, "ki-folder")));
+    folders.forEach((f) =>
+      ul.appendChild(makeTab(f.foldername, f.id, "ki-folder"))
+    );
   };
 
   // ── Data fetching — every call is stamped with `token` and checks it
@@ -460,13 +462,16 @@ export default function Display({ page }) {
 
     try {
 
+      const headingId = Number(sessionStorage.getItem("current_heading_id"));
+      const menuId = Number(sessionStorage.getItem("current_menu_id"));
+
       const { data, error } = await supabase
-        .from("datacollection")
-        .select("folder")
-        .eq("main_heading_id", Number(sessionStorage.getItem("current_heading_id")))
-        .eq("menu_id", Number(sessionStorage.getItem("current_menu_id")))
-        .eq("status", 1)
-        .not("folder", "is", null);
+        .from("folder_master")
+        .select("id, foldername")
+        .eq("main_heading_id", headingId)
+        .eq("menu_id", menuId)
+        .eq("status", "1")
+        .order("id", { ascending: true });
 
 
       if (error) {
@@ -479,13 +484,14 @@ export default function Display({ page }) {
       if (requestTokenRef.current !== token) return;
 
 
-      const folders = [
-        ...new Set(
-          data.map(item => item.folder)
-        )
-      ];
+      const folders = (data || []).map((item) => ({
+        id: Number(item.id),
+        foldername: item.foldername || "",
+      }));
 
-      const sortedFolders = sortFolders(folders);
+      const sortedFolders = [...folders].sort((a, b) =>
+        a.foldername.localeCompare(b.foldername)
+      );
 
       foldersRef.current = sortedFolders;
 
@@ -533,16 +539,18 @@ export default function Display({ page }) {
     try {
 
 
+      const headingId = Number(sessionStorage.getItem("current_heading_id"));
+      const menuId = Number(sessionStorage.getItem("current_menu_id"));
+
       let query = supabase
         .from("datacollection")
         .select("*")
         .eq("status", 1)
-        .eq("menu_id", Number(sessionStorage.getItem("current_menu_id")));
-
-
+        .eq("main_heading_id", headingId)
+        .eq("menu_id", menuId);
 
       if (folder !== "all") {
-        query = query.eq("folder", folder);
+        query = query.eq("folder_id", Number(folder));
       }
 
 
@@ -556,10 +564,20 @@ export default function Display({ page }) {
       }
       else {
 
+        const folderNames = new Map(
+          (foldersRef.current || []).map((f) => [Number(f.id), f.foldername])
+        );
+
+        const mappedRows = (data || []).map((row) => ({
+          ...row,
+          foldername:
+            folderNames.get(Number(row.folder_id)) || row.folder || "",
+        }));
+
         rowsRef.current =
           sessionStorage.getItem("current_menu_name") === "Reports"
-            ? sortReports(data || [])
-            : data || [];
+            ? sortReports(mappedRows)
+            : mappedRows;
 
       }
 
