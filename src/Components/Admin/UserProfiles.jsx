@@ -1482,18 +1482,30 @@ const UserProfiles = () => {
                                                                     className="form-check-input me-3"
                                                                     checked={headingSelected}
                                                                     onChange={(e) => {
+                                                                        const checked = e.target.checked;
+
                                                                         setSelectedHeadingIds((prev) =>
-                                                                            e.target.checked
+                                                                            checked
                                                                                 ? [...new Set([...prev, headingId])]
                                                                                 : prev.filter((id) => id !== headingId)
                                                                         );
-                                                                        if (!e.target.checked) {
-                                                                            setSelectedMenuIds((prev) =>
-                                                                                prev.filter((menuId) =>
-                                                                                    !headingMenus.some((menu) => Number(menu.id) === Number(menuId))
-                                                                                )
-                                                                            );
-                                                                        }
+
+                                                                        setSelectedMenuIds((prev) => {
+                                                                            const headingMenuIds = headingMenus.map((menu) => Number(menu.id));
+
+                                                                            if (!checked) {
+                                                                                // Removing a Main Heading removes all of its menu access.
+                                                                                return prev.filter((menuId) => !headingMenuIds.includes(Number(menuId)));
+                                                                            }
+
+                                                                            // Selecting a Main Heading automatically selects ALL
+                                                                            // menus under it. The user can then untick individual
+                                                                            // menus to exclude them.
+                                                                            return [...new Set([
+                                                                                ...prev,
+                                                                                ...headingMenuIds,
+                                                                            ])];
+                                                                        });
                                                                     }}
                                                                 />
                                                                 <span className="fw-bold">{heading.headingname}</span>
@@ -1526,7 +1538,7 @@ const UserProfiles = () => {
                                                 })}
                                             </div>
                                             <div className="form-text">
-                                                Select the Main Heading first, then select the specific menus this user can access. Admins have access to all Main Headings and Menus. SubAdmins and Users are limited to their assigned Main Headings and menus.
+                                                Select a Main Heading to automatically select all menus under it. You can then untick individual menus to exclude them. If a menu is unticked, the user will not see that menu or its Dashboard. Admins have access to all Main Headings and Menus.
                                             </div>
                                         </div>
 
