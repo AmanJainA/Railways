@@ -388,7 +388,7 @@ const SidebarLayout = ({ children }) => {
 
                 {/* ===== File Management Accordion =====
                      Upload Files / Manage Folder / Manage Menu -> visible to everyone
-                     Manage Uploads / Pending Approvals -> admin only */}
+                     Manage Uploads -> admin only; Pending Approvals -> admin and subadmin */}
                 <div
                   className={`menu-item menu-accordion mb-1${openFiles ? " show" : ""}`}
                 >
