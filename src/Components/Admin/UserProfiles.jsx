@@ -32,6 +32,7 @@ const UserProfiles = () => {
     // Form
     const [headings, setHeadings] = useState([]);
     const [selectedHeadingIds, setSelectedHeadingIds] = useState([]);
+    const [userHeadingMap, setUserHeadingMap] = useState({});
 
     const [form, setForm] = useState({
         username: "",
@@ -75,6 +76,24 @@ const UserProfiles = () => {
             setUsers([]);
         } else {
             setUsers(data || []);
+        }
+
+        const { data: accessRows, error: accessError } = await supabase
+            .from("user_main_heading_access")
+            .select("user_id, main_heading_id, main_heading_master(headingname)")
+            .order("main_heading_id", { ascending: true });
+
+        if (accessError) {
+            console.error("User heading access fetch error:", accessError);
+            setUserHeadingMap({});
+        } else {
+            const map = {};
+            (accessRows || []).forEach((row) => {
+                if (!map[row.user_id]) map[row.user_id] = [];
+                const name = row.main_heading_master?.headingname;
+                if (name) map[row.user_id].push(name);
+            });
+            setUserHeadingMap(map);
         }
 
         setLoading(false);
@@ -273,7 +292,9 @@ const UserProfiles = () => {
                         role: form.role,
                         email: form.email.trim(),
                         dept: form.dept.trim(),
-                        project: form.project.trim(),
+                        project: selectedHeadingIds.length
+                            ? headings.filter((h) => selectedHeadingIds.includes(Number(h.id))).map((h) => h.headingname).join(", ")
+                            : (form.role.toLowerCase() === "admin" ? "All Main Headings" : ""),
                     },
                 ]);
 
@@ -306,7 +327,9 @@ const UserProfiles = () => {
                     role: form.role,
                     email: form.email.trim(),
                     dept: form.dept.trim(),
-                    project: form.project.trim(),
+                    project: selectedHeadingIds.length
+                        ? headings.filter((h) => selectedHeadingIds.includes(Number(h.id))).map((h) => h.headingname).join(", ")
+                        : (form.role.toLowerCase() === "admin" ? "All Main Headings" : ""),
                 };
 
                 // Only update password if user entered a new password
@@ -1041,7 +1064,7 @@ const UserProfiles = () => {
                                         {/* PROJECT */}
 
                                                     <td>
-                                                        {user.project || "-"}
+                                                        {(userHeadingMap[user.id]?.length ? userHeadingMap[user.id].join(", ") : ((user.role || "").toLowerCase() === "admin" ? "All Main Headings" : (user.project || "-")))}
                                                     </td>
 
                                                     {/* ACTION */}
@@ -1329,23 +1352,16 @@ const UserProfiles = () => {
 
                                         </div>
 
-                                        {/* PROJECT */}
+                                        {/* PROJECT / MAIN HEADING */}
 
                                         <div className="col-md-6">
-
-                                            <label className="form-label fw-bold">
-                                                Project
-                                            </label>
-
-                                            <input
-                                                type="text"
-                                                name="project"
-                                                className="form-control form-control-solid"
-                                                placeholder="e.g. NR"
-                                                value={form.project}
-                                                onChange={handleChange}
-                                            />
-
+                                            <label className="form-label fw-bold">Project / Main Heading</label>
+                                            <div className="form-control form-control-solid bg-light">
+                                                {selectedHeadingIds.length
+                                                    ? headings.filter((h) => selectedHeadingIds.includes(Number(h.id))).map((h) => h.headingname).join(", ")
+                                                    : (form.role.toLowerCase() === "admin" ? "All Main Headings" : "Select Main Heading Access above")}
+                                            </div>
+                                            <div className="form-text">Project is automatically represented by the user's assigned Main Headings.</div>
                                         </div>
 
                                     </div>
