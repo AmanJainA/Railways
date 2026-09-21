@@ -22,7 +22,7 @@ export default function NRDashboard() {
 
     navigate("/nr/display");
   };
-  const [data, setData] = useState({
+  const [quickAccessMenus, setQuickAccessMenus] = useState([]);\r\n  const [data, setData] = useState({
     menuData: [],
     typeData: [],
     recentFiles: [],
