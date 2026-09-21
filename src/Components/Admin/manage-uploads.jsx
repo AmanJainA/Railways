@@ -21,6 +21,7 @@ const ManageUploads = () => {
   const [alert, setAlert] = useState(null);
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [headings, setHeadings] = useState([]);
   // Theme setup (same as login)
   useEffect(() => {
     let defaultThemeMode = "light";
@@ -99,6 +100,7 @@ const merged = uploads.map((upload)=>{
  return {
     ...upload,
     ...(collection || {}),
+    main_heading_name: headings.find(h=>Number(h.id)===Number(collection?.main_heading_id))?.headingname || "",
     email:user?.email || ""
  };
 
@@ -132,6 +134,7 @@ const merged = uploads.map((upload)=>{
       return;
     }
 
+    supabase.from("main_heading_master").select("id,headingname").then(({data})=>setHeadings(data||[]));
     loadFiles();
 
     // eslint-disable-next-line
@@ -282,10 +285,11 @@ const merged = uploads.map((upload)=>{
                   <tr className="fw-bold text-muted bg-light">
                     <th className="ps-4">Name</th>
                     <th>Uploaded By</th>
+                    <th>Main Heading</th>
                     <th>Menu</th>
                     <th>Folder</th>
                     <th>Type</th>
-                    <th>File</th>
+                    <th>Source</th>
                     <th>Status</th>
                     <th>Remark</th>
                     <th className="text-end pe-4">Action</th>
@@ -307,23 +311,11 @@ const merged = uploads.map((upload)=>{
                       <tr key={f.id}>
                         <td className="ps-4">{f.name}</td>
                         <td>{f.uploaded_by || "-"}</td>
+                        <td>{f.main_heading_name || f.main_heading_id || "-"}</td>
                         <td>{f.menuname}</td>
                         <td>{f.folder || "-"}</td>
                         <td>{f.type}</td>
-                        <td>
-                          <a
-                            href={
-                              supabase.storage
-                                .from("documents")
-                                .getPublicUrl(f.links).data.publicUrl
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="link-primary"
-                          >
-                            View
-                          </a>
-                        </td>
+                        <td>{f.source_type === "onedrive_path" ? <a href={f.links} target="_blank" rel="noopener noreferrer" className="link-primary">OneDrive</a> : <a href={supabase.storage.from("documents").getPublicUrl(f.links).data.publicUrl} target="_blank" rel="noopener noreferrer" className="link-primary">Stored File</a>}</td>
                         <td>
                           <span
                             className={`badge badge-light-${STATUS_BADGE[f.status]
