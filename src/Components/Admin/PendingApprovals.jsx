@@ -201,15 +201,11 @@ const PendingApprovals = () => {
                               <td>{r.upload_time || "-"}</td>
                               <td className="pe-5 text-end">
                                 <a
-                                  href={
-                                    supabase.storage
-                                      .from("documents")
-                                      .getPublicUrl(r.links).data.publicUrl
-                                  }
+                                  href={r.source_type === "onedrive_path" ? r.links : supabase.storage.from("documents").getPublicUrl(r.links).data.publicUrl}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="btn btn-sm btn-icon btn-light-primary me-1"
-                                  title="View"
+                                  title={r.source_type === "onedrive_path" ? "Open OneDrive Path" : "View"}
                                 >
                                   <i className="ki-duotone ki-eye fs-4">
                                     <span className="path1"></span>
