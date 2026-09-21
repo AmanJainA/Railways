@@ -334,7 +334,7 @@ const UserProfiles = () => {
                     {
                         username: form.username.trim(),
                         password: form.password.trim(),
-                        role: form.role,
+                        role: form.role.toLowerCase() === "admin" ? "Admin" : form.role.toLowerCase() === "subadmin" ? "SubAdmin" : "User",
                         email: form.email.trim(),
                         dept: form.dept.trim(),
                         project: selectedHeadingIds.length
@@ -372,7 +372,7 @@ const UserProfiles = () => {
             else {
                 const updateData = {
                     username: form.username.trim(),
-                    role: form.role,
+                    role: form.role.toLowerCase() === "admin" ? "Admin" : form.role.toLowerCase() === "subadmin" ? "SubAdmin" : "User",
                     email: form.email.trim(),
                     dept: form.dept.trim(),
                     project: selectedHeadingIds.length
