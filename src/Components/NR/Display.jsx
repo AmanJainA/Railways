@@ -169,7 +169,7 @@ export default function Display({ page }) {
             <i class="ki-duotone ki-folder fs-7 me-1">
               <span class="path1"></span><span class="path2"></span>
             </i>
-            ${escapeHtml(ucFirst(row.folder || ""))}
+            ${escapeHtml(ucFirst(row.foldername || row.folder || ""))}
           </span>
         </td>`
             : ""
@@ -379,12 +379,12 @@ export default function Display({ page }) {
     if (!ul) return;
     ul.innerHTML = "";
 
-    const makeTab = (label, folder, iconClass) => {
+    const makeTab = (label, folderId, iconClass) => {
       const li = document.createElement("li");
       li.className = "nav-item";
       const a = document.createElement("a");
       a.href = "#";
-      a.className = `nav-link${folder === active ? " active" : ""}`;
+      a.className = `nav-link${String(folderId) === String(active) ? " active" : ""}`;
       a.innerHTML = `
         <i class="ki-duotone ${iconClass} fs-4 me-1">
           <span class="path1"></span><span class="path2"></span>
