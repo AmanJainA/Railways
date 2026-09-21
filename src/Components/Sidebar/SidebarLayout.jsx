@@ -20,6 +20,7 @@ const pageTitles = {
   "/uploadfile": "Upload Files",
   "/nr/dashboard": "Data Dashboard",
   "/managemainheading": "Manage Main Heading",
+  "/worktracker": "Work Tracker / Todo",
 };
 
 const sessionTitles = {
