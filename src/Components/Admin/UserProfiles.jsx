@@ -1009,7 +1009,7 @@ const UserProfiles = () => {
                                         ) : filteredUsers.length === 0 ? (
                                             <tr>
                                                 <td
-                                                    colSpan="7"
+                                                    colSpan="8"
                                                     className="text-center py-15 text-muted"
                                                 >
                                                     No users found.
