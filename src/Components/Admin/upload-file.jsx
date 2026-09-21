@@ -1,7 +1,19 @@
 import React, { useState, useEffect } from "react";
+import { supabase } from "../../supabase";
 
-const API_BASE = "https://samrat.cu.ma";
-const ALLOWED_EXT = ["jpg", "jpeg", "png", "gif", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"];
+const ALLOWED_EXT = [
+  "jpg",
+  "jpeg",
+  "png",
+  "gif",
+  "pdf",
+  "doc",
+  "docx",
+  "xls",
+  "xlsx",
+  "ppt",
+  "pptx",
+];
 
 const UploadFile = () => {
   const [form, setForm] = useState({ name: "", menuname: "", folder: "" });
@@ -13,18 +25,21 @@ const UploadFile = () => {
   const [folders, setFolders] = useState([]);
 
   // pulled from session set at login (Login.jsx) - only used for display + uploaded_by
-  const uploaded_by = localStorage.getItem("user") || "";
-  const dept = localStorage.getItem("dept") || "";
+  const uploaded_by = sessionStorage.getItem("user") || "";
+  const dept = sessionStorage.getItem("dept") || "";
 
   useEffect(() => {
-    fetch(`${API_BASE}/menu_master.php?action=list`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.status === 1) {
-          setMenus(data.data.filter((m) => Number(m.status) === 1));
-        }
-      })
-      .catch(() => setMenus([]));
+    const loadMenus = async () => {
+      const { data, error } = await supabase
+        .from("menu_master")
+        .select("*")
+        .eq("status", 1)
+        .order("menuname");
+
+      if (!error) setMenus(data);
+    };
+
+    loadMenus();
   }, []);
 
   // whenever the chosen menu changes, load its folders
@@ -33,22 +48,33 @@ const UploadFile = () => {
       setFolders([]);
       return;
     }
-    fetch(`${API_BASE}/folder_master.php?action=list&menuname=${encodeURIComponent(form.menuname)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.status === 1) setFolders(data.data);
-      })
-      .catch(() => setFolders([]));
+
+    const loadFolders = async () => {
+      const { data, error } = await supabase
+        .from("folder_master")
+        .select("*")
+        .eq("menuname", form.menuname)
+        .order("foldername");
+
+      if (!error) setFolders(data);
+    };
+
+    loadFolders();
   }, [form.menuname]);
 
-  const showAlert = (type, title, message) => setAlert({ type, title, message });
+  const showAlert = (type, title, message) =>
+    setAlert({ type, title, message });
 
   const handleFileChange = (e) => {
     const f = e.target.files[0];
     if (!f) return;
     const ext = f.name.split(".").pop().toLowerCase();
     if (!ALLOWED_EXT.includes(ext)) {
-      showAlert("danger", "Invalid File", "Allowed types: Images, PDF, DOC, XLS, PPT");
+      showAlert(
+        "danger",
+        "Invalid File",
+        "Allowed types: Images, PDF, DOC, XLS, PPT",
+      );
       e.target.value = "";
       setFile(null);
       return;
@@ -58,47 +84,95 @@ const UploadFile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!form.name || !form.menuname || !file) {
-      showAlert("danger", "Error", "Please fill all required fields and select a file.");
+      showAlert("danger", "Error", "Please fill all required fields.");
       return;
     }
 
     setLoading(true);
-    setAlert(null);
 
     try {
-      const fd = new FormData();
-      fd.append("name", form.name);
-      fd.append("menuname", form.menuname);
-      fd.append("folder", form.folder);
-      fd.append("uploaded_by", uploaded_by); // backend looks up dept/email via JOIN on this
-      fd.append("file", file);
+      const ext = file.name.split(".").pop();
 
-      const res = await fetch(`${API_BASE}/upload_file.php`, {
-        method: "POST",
-        body: fd,
-      });
-      const data = await res.json();
+      const filename =
+        Date.now() + "_" + Math.random().toString(36).substring(2) + "." + ext;
 
-      if (data.status === 1) {
-        showAlert("primary", "Success", data.msg);
-        setForm({ name: "", menuname: "", folder: "" });
-        setFile(null);
-        const fileInput = document.getElementById("uploadFileInput");
-        if (fileInput) fileInput.value = "";
-      } else {
-        showAlert("danger", "Error", data.msg || "Upload failed");
+      const { error: uploadError } = await supabase.storage
+        .from("documents")
+        .upload(filename, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: collection, error: collectionError } = await supabase
+        .from("datacollection")
+        .insert({
+          name: form.name,
+          menuname: form.menuname,
+          folder: form.folder,
+          type: file.name.split(".").pop().toLowerCase(),
+          status: 0,
+          uploaded_by,
+          links: filename,
+          uploaded_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (collectionError) {
+        alert(JSON.stringify(collectionError, null, 2));
+        throw collectionError;
       }
+      const { error: fileError } = await supabase
+        .from("file_uploads")
+        .insert({
+          datacollection_id: collection.id,
+          uploaded_by,
+        });
+
+      if (fileError) throw fileError;
+      // Send notification mail to admin
+      await fetch("https://samrat.cu.ma/send_upload_notification.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: form.name,
+          menu: form.menuname,
+          folder: form.folder,
+          uploaded_by,
+          department: dept,
+          filename,
+        }),
+      });
+      showAlert("success", "Success", "File uploaded successfully.");
+
+      setForm({
+        name: "",
+        menuname: "",
+        folder: "",
+      });
+
+      setFile(null);
+
+      document.getElementById("uploadFileInput").value = "";
     } catch (err) {
       showAlert("danger", "Error", err.message);
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   return (
-    <div id="kt_body" className="header-fixed header-tablet-and-mobile-fixed aside-fixed">
-      <div className="content d-flex flex-column flex-column-fluid fs-6" id="kt_content">
+    <div
+      id="kt_body"
+      className="header-fixed header-tablet-and-mobile-fixed aside-fixed"
+    >
+      <div
+        className="content d-flex flex-column flex-column-fluid fs-6"
+        id="kt_content"
+      >
         <div className="container-xxl mt-5">
           <div className="card shadow-sm">
             <div className="card-header">
@@ -122,40 +196,58 @@ const UploadFile = () => {
               <form onSubmit={handleSubmit}>
                 <div className="row g-6">
                   <div className="col-md-6">
-                    <label className="form-label fw-bold required">File Title</label>
+                    <label className="form-label fw-bold required">
+                      File Title
+                    </label>
                     <input
                       type="text"
                       className="form-control form-control-solid"
                       value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, name: e.target.value })
+                      }
                       placeholder="e.g. Aadhar Card"
                       required
                     />
                   </div>
 
                   <div className="col-md-6">
-                    <label className="form-label fw-bold required">Menu Name</label>
+                    <label className="form-label fw-bold required">
+                      Menu Name
+                    </label>
                     <select
                       className="form-select form-select-solid"
                       value={form.menuname}
-                      onChange={(e) => setForm({ ...form, menuname: e.target.value, folder: "" })}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          menuname: e.target.value,
+                          folder: "",
+                        })
+                      }
                       required
                     >
                       <option value="">Select Menu</option>
                       {menus.map((m) => (
-                        <option key={m.id} value={m.menuname}>{m.menuname}</option>
+                        <option key={m.id} value={m.menuname}>
+                          {m.menuname}
+                        </option>
                       ))}
                     </select>
                   </div>
 
                   <div className="col-md-6">
-                    <label className="form-label fw-bold">Folder (optional)</label>
+                    <label className="form-label fw-bold">
+                      Folder (optional)
+                    </label>
                     <input
                       type="text"
                       list="folderOptions"
                       className="form-control form-control-solid"
                       value={form.folder}
-                      onChange={(e) => setForm({ ...form, folder: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, folder: e.target.value })
+                      }
                       placeholder="Pick existing or type a new folder"
                       disabled={!form.menuname}
                     />
@@ -176,22 +268,38 @@ const UploadFile = () => {
                       onChange={handleFileChange}
                       required
                     />
-                    <div className="form-text">Allowed: Image, PDF, DOC, XLS, PPT</div>
+                    <div className="form-text">
+                      Allowed: Image, PDF, DOC, XLS, PPT
+                    </div>
                   </div>
 
                   <div className="col-md-6">
                     <label className="form-label fw-bold">Uploaded By</label>
-                    <input type="text" className="form-control form-control-solid" value={uploaded_by} disabled />
+                    <input
+                      type="text"
+                      className="form-control form-control-solid"
+                      value={uploaded_by}
+                      disabled
+                    />
                   </div>
 
                   <div className="col-md-6">
                     <label className="form-label fw-bold">Department</label>
-                    <input type="text" className="form-control form-control-solid" value={dept} disabled />
+                    <input
+                      type="text"
+                      className="form-control form-control-solid"
+                      value={dept}
+                      disabled
+                    />
                   </div>
                 </div>
 
                 <div className="text-end mt-8">
-                  <button type="submit" className="btn btn-primary px-6" disabled={loading}>
+                  <button
+                    type="submit"
+                    className="btn btn-primary px-6"
+                    disabled={loading}
+                  >
                     {loading ? "Uploading..." : "Submit for Approval"}
                   </button>
                 </div>

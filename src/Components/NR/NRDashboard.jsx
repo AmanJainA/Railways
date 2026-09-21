@@ -3,16 +3,16 @@ import ApexCharts from "react-apexcharts";
 import "./NRDashboard.css";
 import { useNavigate } from "react-router-dom";
 import Footer from "../Footer/Footer";
-
+import { supabase } from "../../supabase";
 export default function NRDashboard() {
   const navigateToMenu = (menuName) => {
-  const slug = menuName.toLowerCase().replace(/\s+/g, "");
+    const slug = menuName.toLowerCase().replace(/\s+/g, "");
 
-  // Save selected page
-  localStorage.setItem("current_page", slug);
+    // Save selected page
+    sessionStorage.setItem("current_page", slug);
 
-  navigate("/nr/display");
-};
+    navigate("/nr/display");
+  };
   const [data, setData] = useState({
     menuData: [],
     typeData: [],
@@ -21,10 +21,93 @@ export default function NRDashboard() {
   });
   const navigate = useNavigate();
   useEffect(() => {
-    fetch("https://samrat.cu.ma/nrdashboard.php")
-      .then((res) => res.json())
-      .then((res) => setData(res));
+    loadDashboard();
   }, []);
+
+  async function loadDashboard() {
+    try {
+      // ==========================
+      // Fetch Files
+      // ==========================
+      const { data: files, error } = await supabase
+        .from("datacollection")
+        .select("*")
+        .eq("status", 1)
+        .not("menuname", "in", '("mydata","Nangia")');
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      // ==========================
+      // Menu Count
+      // ==========================
+      const menuMap = {};
+
+      files.forEach((item) => {
+        const menu = item.menuname || "Other";
+        menuMap[menu] = (menuMap[menu] || 0) + 1;
+      });
+
+      const menuData = Object.keys(menuMap).map((key) => ({
+        menuname: key,
+        total: menuMap[key],
+      }));
+
+      // ==========================
+      // File Type Count
+      // ==========================
+      const typeMap = {};
+
+      files.forEach((item) => {
+        const type = (item.type || "Other").toLowerCase();
+        typeMap[type] = (typeMap[type] || 0) + 1;
+      });
+
+      const typeData = Object.keys(typeMap).map((key) => ({
+        type: key,
+        total: typeMap[key],
+      }));
+
+      // ==========================
+      // Folder Count
+      // ==========================
+      const folderMap = {};
+
+      files.forEach((item) => {
+        const folder = item.menuname || "Others";
+
+        if (!folderMap[folder]) {
+          folderMap[folder] = 0;
+        }
+
+        folderMap[folder]++;
+      });
+
+      const folderData = Object.keys(folderMap).map((key) => ({
+        menuname: key,
+        total: folderMap[key],
+      }));
+
+      // ==========================
+      // Recent Files
+      // ==========================
+      const recentFiles = [...files].sort((a, b) => b.id - a.id).slice(0, 10);
+
+      // ==========================
+      // Set State
+      // ==========================
+      setData({
+        menuData,
+        typeData,
+        folderData,
+        recentFiles,
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   const grandTotal = data.menuData.reduce((a, b) => a + Number(b.total), 0);
 
@@ -153,7 +236,9 @@ export default function NRDashboard() {
                   </span>
                 </div>
 
-                <h1 className="nr-hero-title">Northern Railway Data Dashboard</h1>
+                <h1 className="nr-hero-title">
+                  Northern Railway Data Dashboard
+                </h1>
                 <p className="nr-hero-sub">
                   Central repository for all Northern Railway documents, reports
                   &amp; data files.
@@ -161,7 +246,7 @@ export default function NRDashboard() {
 
                 <div className="d-flex gap-3 mt-4 flex-wrap">
                   <button
-                   onClick={() => navigateToMenu("Study Data")}
+                    onClick={() => navigateToMenu("Study Data")}
                     className="btn btn-sm btn-primary px-4"
                   >
                     <i className="ki-duotone ki-book me-1 fs-5">
@@ -259,10 +344,10 @@ export default function NRDashboard() {
               return (
                 <div className="col-6 col-md-4 col-lg-3" key={i}>
                   <div
-    className="nr-cat-card"
-    onClick={() => navigateToMenu(menu.menuname)}
-    style={{ cursor: "pointer" }}
->
+                    className="nr-cat-card"
+                    onClick={() => navigateToMenu(menu.menuname)}
+                    style={{ cursor: "pointer" }}
+                  >
                     <div className="d-flex justify-content-between align-items-start">
                       {/* ICON */}
                       <div className={`cat-icon bg-light-${cat.color}`}>

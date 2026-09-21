@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../../supabase";
 const ForgotPassword = () => {
   // step 1 = email, step 2 = otp
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
 
   const [email, setEmail] = useState("");
@@ -17,8 +19,8 @@ const ForgotPassword = () => {
 
     if (document.documentElement.hasAttribute("data-bs-theme-mode")) {
       themeMode = document.documentElement.getAttribute("data-bs-theme-mode");
-    } else if (localStorage.getItem("data-bs-theme")) {
-      themeMode = localStorage.getItem("data-bs-theme");
+    } else if (sessionStorage.getItem("data-bs-theme")) {
+      themeMode = sessionStorage.getItem("data-bs-theme");
     } else {
       themeMode = defaultThemeMode;
     }
@@ -40,8 +42,8 @@ const ForgotPassword = () => {
   const handleSendOtp = async (e) => {
     e.preventDefault();
 
-    if (!email) {
-      showAlert("danger", "Error", "Please enter your email");
+    if (!email.trim()) {
+      showAlert("danger", "Error", "Please enter email");
       return;
     }
 
@@ -49,25 +51,81 @@ const ForgotPassword = () => {
     setAlert(null);
 
     try {
-      const response = await fetch("https://samrat.cu.ma/send_otp.php", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
+      // Check user exists
+      const { data: users, error } = await supabase
+        .from("users")
+        .select("id, email")
+        .eq("email", email.trim());
+
+      if (error) throw error;
+
+
+      if (!users || users.length === 0) {
+        showAlert("danger", "Error", "Email not registered");
+        setLoading(false);
+        return;
+      }
+
+      // First matching user
+      const user = users[0];
+
+
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+      const expires_at = new Date(
+        Date.now() + 10 * 60 * 1000
+      ).toISOString();
+
+      // Delete previous OTP
+      await supabase
+        .from("password_resets")
+        .delete()
+        .eq("email", email);
+
+      // Insert new OTP
+      const { error: insertError } = await supabase
+        .from("password_resets")
+        .insert({
+          email,
+          otp,
+          expires_at,
+          verified: false,
+        });
+      if (insertError) {
+        throw insertError;
+      }
+      if (insertError) throw insertError;
+
+      // Send Mail
+      const response = await fetch(
+        "https://samrat.cu.ma/send_mail.php",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            otp,
+          }),
+        }
+      );
 
       const res = await response.json();
 
       if (res.status === 1) {
-        showAlert("primary", "OTP Sent", res.msg);
-        setStep(2); // move to OTP screen
+        showAlert("primary", "OTP Sent", "OTP sent successfully.");
+        setStep(2);
       } else {
         showAlert("danger", "Error", res.msg);
       }
-    } catch (error) {
-      console.error(error);
-      showAlert("danger", "Error", "Something went wrong. Try again.");
+    } catch (err) {
+
+      showAlert(
+        "danger",
+        "Error",
+        err.message || JSON.stringify(err)
+      );
     } finally {
       setLoading(false);
     }
@@ -77,44 +135,62 @@ const ForgotPassword = () => {
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
 
-    if (!otp) {
-      showAlert("danger", "Error", "Please enter the OTP");
+    if (!otp.trim()) {
+      showAlert("danger", "Error", "Please enter OTP");
       return;
     }
 
     setLoading(true);
-    setAlert(null);
 
     try {
-      const response = await fetch("https://samrat.cu.ma/verify_otp.php", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, otp }),
-      });
+      const { data, error } = await supabase
+        .from("password_resets")
+        .select("*")
+        .eq("email", email)
+        .eq("otp", otp)
+        .eq("verified", false)
+        .order("id", { ascending: false })
+        .limit(1);
 
-      const res = await response.json();
+      if (error) throw error;
 
-      if (res.status === 1) {
-        showAlert("primary", "Verified", res.msg);
-
-        // Save email + reset_token temporarily so reset-password.jsx can use it
-        sessionStorage.setItem("reset_email", email);
-        sessionStorage.setItem("reset_token", res.reset_token);
-
-        setTimeout(() => {
-          window.location.href = "/reset-password";
-        }, 800);
-      } else {
-        showAlert("danger", "Error", res.msg);
+      if (!data || data.length === 0) {
+        showAlert("danger", "Error", "Invalid OTP");
         setLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error(error);
-      showAlert("danger", "Error", "Something went wrong. Try again.");
-      setLoading(false);
+
+      const record = data[0];
+
+      // Check expiry
+      if (new Date(record.expires_at) < new Date()) {
+        showAlert("danger", "Error", "OTP expired");
+        setLoading(false);
+        return;
+      }
+
+      const resetToken = crypto.randomUUID();
+
+      const { error: updateError } = await supabase
+        .from("password_resets")
+        .update({
+          verified: true,
+          reset_token: resetToken,
+        })
+        .eq("id", record.id);
+
+      if (updateError) throw updateError;
+
+      sessionStorage.setItem("reset_email", email);
+      sessionStorage.setItem("reset_token", resetToken);
+
+      navigate("/reset-password", { replace: true });
+    } catch (err) {
+      console.log(err);
+      showAlert("danger", "Error", err.message);
     }
+
+    setLoading(false);
   };
 
   const handleResendOtp = async () => {
@@ -213,7 +289,7 @@ const ForgotPassword = () => {
                         {loading ? "Sending OTP..." : "Send OTP"}
                       </button>
 
-                      <a href="/login" className="btn btn-lg btn-light-primary w-100">
+                      <a href={process.env.PUBLIC_URL + "/login"} className="btn btn-lg btn-light-primary w-100">
                         Back to Login
                       </a>
                     </div>
@@ -265,7 +341,7 @@ const ForgotPassword = () => {
                       </button>
 
                       <a
-                        href="/login"
+                        href={process.env.PUBLIC_URL + "/login"}
                         className="link-primary fs-6 fw-bold mt-2"
                       >
                         Back to Login

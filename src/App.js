@@ -19,6 +19,9 @@ import ManageUploads from "./Components/Admin/manage-uploads";
 import PendingApprovals from "./Components/Admin/PendingApprovals";
 import ManageFolder from "./Components/Admin/manage-folder";
 import ManageMenu from "./Components/Admin/manage-menu";
+import UserProfiles from "./Components/Admin/UserProfiles";
+import PageActivity from "./Components/Admin/PageActivity";
+import LoginHistory from "./Components/Admin/LoginHistory";
 
 function DisplayWrapper() {
   const location = useLocation();
@@ -30,10 +33,10 @@ function DisplayWrapper() {
         .toLowerCase()
         .replace(/\s+/g, "");
 
-      localStorage.setItem("current_page", slug);
+      sessionStorage.setItem("current_page", slug);
       setPage(slug);
     } else {
-      setPage(localStorage.getItem("current_page") || "");
+      setPage(sessionStorage.getItem("current_page") || "");
     }
   }, [location]);
 
@@ -44,8 +47,20 @@ function DisplayWrapper() {
   return <Display page={page} />;
 }
 function App() {
+  useEffect(() => {
+    const redirect = sessionStorage.getItem("redirect");
+
+    if (redirect) {
+      sessionStorage.removeItem("redirect");
+      window.history.replaceState({}, "", redirect);
+    }
+  }, []);
+  const basename =
+  process.env.NODE_ENV === "production"
+    ? "/Railways"
+    : "/Railways";
   return (
-    <BrowserRouter future={{
+    <BrowserRouter basename={basename} future={{
       v7_startTransition: true,
       v7_relativeSplatPath: true,
     }}>
@@ -76,6 +91,9 @@ function App() {
                 <Route path="/pendingapprovals" element={<PendingApprovals />} />
                 <Route path="/managefolder" element={<ManageFolder />} />
                 <Route path="/managemenu" element={<ManageMenu />} />
+                <Route path="/userprofiles" element={<UserProfiles />} />
+                <Route path="/pageactivity" element={<PageActivity />} />
+                <Route path="/loginhistory" element={<LoginHistory />} />
               </Routes>
             </SidebarLayout>
             </ProtectedRoute>

@@ -25,7 +25,7 @@ const PageTracker = () => {
 
     case "/nr/display": {
       // Get actual selected menu
-      const slug = localStorage.getItem("current_page") || "";
+      const slug = sessionStorage.getItem("current_page") || "";
 
       const menuMap = {
         studydata: "Study Data",
@@ -45,7 +45,7 @@ const PageTracker = () => {
     }
 
     case "/nr/viewer": {
-      const slug = localStorage.getItem("current_page") || "";
+      const slug = sessionStorage.getItem("current_page") || "";
       return `Viewer (${slug})`;
     }
 
@@ -55,7 +55,7 @@ const PageTracker = () => {
 })();
 
     axios.post("https://samrat.cu.ma/track_page.php", {
-    username: localStorage.getItem("user"),
+    username: sessionStorage.getItem("user"),
     page: pageName,
     url: location.pathname,
 })

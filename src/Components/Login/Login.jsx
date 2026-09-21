@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../../supabase";
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
-
+  const navigate = useNavigate();
   // ✅ Theme setup (converted from script)
   useEffect(() => {
     let defaultThemeMode = "light";
@@ -14,8 +15,8 @@ const Login = () => {
 
     if (document.documentElement.hasAttribute("data-bs-theme-mode")) {
       themeMode = document.documentElement.getAttribute("data-bs-theme-mode");
-    } else if (localStorage.getItem("data-bs-theme")) {
-      themeMode = localStorage.getItem("data-bs-theme");
+    } else if (sessionStorage.getItem("data-bs-theme")) {
+      themeMode = sessionStorage.getItem("data-bs-theme");
     } else {
       themeMode = defaultThemeMode;
     }
@@ -30,15 +31,14 @@ const Login = () => {
   }, []);
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn");
-
-    const role = localStorage.getItem("role");
+    const isLoggedIn = sessionStorage.getItem("isLoggedIn");
+    const role = sessionStorage.getItem("role");
 
     if (isLoggedIn === "true") {
-      if (role === "admin") {
-        window.location.href = "/dashboard";
+      if (role === "Admin") {
+        navigate("/dashboard");
       } else {
-        window.location.href = "/nr/dashboard";
+        navigate("/nr/dashboard");
       }
     }
   }, []);
@@ -57,40 +57,103 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("https://samrat.cu.ma/login_check.php", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          password,
-        }),
+      const { data, error } = await supabase.from("users").select().match({
+        username: username,
+        password: password,
       });
-
-      const res = await response.json();
-
-      if (res.status === 1) {
-        showAlert("primary", "Success", res.msg);
-        const user = res.user;
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("user", res.user);
-        localStorage.setItem("role", res.role);
-        localStorage.setItem("email", res.email);
-        localStorage.setItem("dept", res.dept);
-        localStorage.setItem("project", res.project);
-
-        setTimeout(() => {
-          if (res.role === "Admin") {
-            window.location.href = "/dashboard";
-          } else {
-            window.location.href = "/nr/dashboard";
-          }
-        }, 1000);
-      } else {
-        showAlert("danger", "Error", res.msg);
-        setLoading(false);
+      if (error) {
+        console.log(error);
+        showAlert("danger", "Error", error.message);
+        return;
       }
+
+      if (!data || data.length === 0) {
+        showAlert("danger", "Error", "Invalid Username or Password");
+        return;
+      }
+
+      const user = data[0];
+      // Get public IP
+      let ipAddress = "";
+
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        const ip = await res.json();
+        ipAddress = ip.ip;
+      } catch (e) {
+        console.log("Unable to fetch IP");
+      }
+
+      // Browser details
+      const browser = navigator.userAgent;
+      const operating_system = navigator.platform;
+      const device_type =
+        /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
+          ? "Mobile"
+          : "Desktop";
+
+      const session_id = crypto.randomUUID();
+
+      // Check existing login history
+      const { data: history, error: historyError } = await supabase
+        .from("login_history")
+        .select("id, login_count")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+
+      if (history) {
+        // Update existing record
+        await supabase
+          .from("login_history")
+          .update({
+            login_count: (history.login_count || 0) + 1,
+            login_time: new Date().toISOString(),
+            last_activity: new Date().toISOString(),
+            ip_address: ipAddress,
+            browser,
+            operating_system,
+            device_type,
+            session_id,
+          })
+          .eq("user_id", user.id);
+      } else {
+        // Insert first login
+        await supabase
+          .from("login_history")
+          .insert({
+            user_id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            login_count: 1,
+            login_time: new Date().toISOString(),
+            last_activity: new Date().toISOString(),
+            ip_address: ipAddress,
+            browser,
+            operating_system,
+            device_type,
+            session_id,
+            created_at: new Date().toISOString(),
+          });
+      }
+
+      sessionStorage.setItem("isLoggedIn", "true");
+      sessionStorage.setItem("user_id", user.id);
+      sessionStorage.setItem("user", user.username);
+      sessionStorage.setItem("role", user.role);
+      sessionStorage.setItem("email", user.email ?? "");
+      sessionStorage.setItem("dept", user.dept ?? "");
+      sessionStorage.setItem("project", user.project ?? "");
+      showAlert("success", "Success", "Login Successful");
+
+      setTimeout(() => {
+        if (user.role === "Admin") {
+          navigate("/dashboard");
+        } else {
+          navigate("/nr/dashboard");
+        }
+      }, 1000);
     } catch (error) {
       console.error(error);
 
@@ -108,7 +171,7 @@ const Login = () => {
           <div className="d-flex flex-column flex-lg-row-auto w-xl-600px bg-primary position-xl-relative">
             <div className="d-flex flex-column position-xl-fixed top-0 bottom-0 w-xl-600px scroll-y">
               <div className="d-flex flex-row-fluid flex-column flex-center text-center">
-                <a href="/" className="py-9 mb-4">
+                <a href={process.env.PUBLIC_URL + "/"} className="py-9 mb-4">
                   <img
                     alt="Logo"
                     src={
@@ -170,11 +233,11 @@ const Login = () => {
                     <div className="d-flex flex-stack mb-2">
                       <label className="form-label fw-bold">Password</label>
                       <Link
-  to="/forgot-password"
-  className="link-primary fs-6 fw-bold"
->
-  Forgot Password?
-</Link>
+                        to="/forgot-password"
+                        className="link-primary fs-6 fw-bold"
+                      >
+                        Forgot Password?
+                      </Link>
                     </div>
 
                     <input

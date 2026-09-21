@@ -4,7 +4,7 @@ import JSZip from "jszip";
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import Footer from "../Footer/Footer";
-
+import { supabase } from "../../supabase";
 window.JSZip = JSZip;
 if (pdfFonts && pdfFonts.pdfMake) {
   pdfMake.vfs = pdfFonts.pdfMake.vfs;
@@ -20,7 +20,7 @@ const PAGE_CONFIG = {
   visitdata: { title: "Visit Data", hasFolders: true },
   policy: { title: "Policy", hasFolders: true },
   // ppt: { title: "PPT", hasFolders: false },
-  ppt: { title: "Reports", hasFolders: false },
+  reports: { title: "Reports", hasFolders: false },
   questions: { title: "Questions", hasFolders: false },
   researchpaper: { title: "Research Paper", hasFolders: false },
   summarization: { title: "Summarization", hasFolders: false },
@@ -83,45 +83,63 @@ export default function Display({ page }) {
 
   // ── Destroy DataTable safely ──────────────────────────────────────────────
   const destroyDT = () => {
-    if (!dtRef.current) return;
     try {
-      dtRef.current.destroy(false);
-    } catch (_) {}
-    dtRef.current = null;
-  };
+      if (
+        tableRef.current &&
+        $.fn.DataTable &&
+        $.fn.DataTable.isDataTable(tableRef.current)
+      ) {
+        $(tableRef.current).DataTable().clear().destroy();
+      }
 
+      dtRef.current = null;
+
+      if (tableRef.current) {
+        tableRef.current.innerHTML = `
+        <thead></thead>
+        <tbody></tbody>
+      `;
+      }
+
+    } catch (error) {
+      console.error("DataTable destroy error:", error);
+    }
+  };
   // ── Write thead imperatively so it always matches tbody column count ───────
   const writeThead = (hf) => {
-    const table = tableRef.current;
-    if (!table) return;
-    let thead = table.querySelector("thead");
-    if (!thead) {
-      thead = document.createElement("thead");
-      table.prepend(thead);
-    }
+    if (!tableRef.current) return;
+
+    const thead = tableRef.current.querySelector("thead");
+
+    if (!thead) return;
+
     thead.innerHTML = `
-      <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-        <th class="min-w-10px">#</th>
-        <th class="min-w-100px">File Name</th>
-        <th class="min-w-100px">File Type</th>
-        ${hf ? `<th class="min-w-100px">Folder</th>` : ""}
-        <th class="min-w-10px">Action</th>
-      </tr>`;
+    <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+      <th>#</th>
+      <th style="width:650px">File Name</th>
+      <th>File Type</th>
+      ${hf ? "<th>Folder</th>" : ""}
+      <th>Action</th>
+    </tr>
+  `;
   };
 
   // ── Write tbody rows imperatively ─────────────────────────────────────────
   const writeRows = (rows, hf) => {
     const table = tableRef.current;
     if (!table) return;
-    let tbody = table.querySelector("tbody");
+    let tbody = tableRef.current.querySelector("tbody");
+
     if (!tbody) {
       tbody = document.createElement("tbody");
-      table.appendChild(tbody);
+      tableRef.current.appendChild(tbody);
     }
+
+    tbody.innerHTML = "";
 
     if (rows.length === 0) {
       tbody.innerHTML = `
-        <tr>
+         <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
           <td colspan="${hf ? 5 : 4}" class="text-center text-gray-500 py-10">
             <i class="ki-duotone ki-folder fs-2x text-gray-400 mb-3 d-block">
               <span class="path1"></span><span class="path2"></span>
@@ -135,7 +153,7 @@ export default function Display({ page }) {
     tbody.innerHTML = rows
       .map(
         (row, i) => `
-      <tr>
+      <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
         <td class="text-gray-900">${i + 1}</td>
         <td class="text-gray-900 text-hover-primary">${escapeHtml(row.name)}</td>
         <td>
@@ -143,8 +161,7 @@ export default function Display({ page }) {
             ${(row.type || "").toUpperCase()}
           </div>
         </td>
-        ${
-          hf
+        ${hf
             ? `
         <td>
           <span class="badge badge-light-primary">
@@ -155,9 +172,9 @@ export default function Display({ page }) {
           </span>
         </td>`
             : ""
-        }
+          }
         <td>
-          <a href="/nr/viewer" class="viewer-link" data-file="${encodeURIComponent(row.links || "")}">
+          <a href="/Railways/nr/viewer" class="viewer-link" data-file="${encodeURIComponent(row.links || "")}">
             <i class="ki-duotone ki-eye fs-3 mt-2 text-primary">
               <span class="path1"></span>
               <span class="path2"></span>
@@ -192,25 +209,34 @@ export default function Display({ page }) {
   // ── Write loading spinner ─────────────────────────────────────────────────
   const writeLoading = () => {
     const hf = getHF();
-    const table = tableRef.current;
-    if (!table) return;
-    const tbody = table.querySelector("tbody");
-    if (!tbody) return;
-    tbody.innerHTML = `
-      <tr>
+
+    if (!tableRef.current) return;
+
+    tableRef.current.innerHTML = `
+    <thead></thead>
+    <tbody>
+      <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
         <td colspan="${hf ? 5 : 4}" class="text-center py-10">
           <span class="spinner-border spinner-border-sm text-primary me-2"></span>
           Loading...
         </td>
-      </tr>`;
+      </tr>
+    </tbody>
+  `;
   };
-
   // ── Init DataTable ────────────────────────────────────────────────────────
   const initDT = (rows) => {
+
+    // Component/table may already be unmounted
+    if (!tableRef.current) return;
+
     const hf = getHF();
     const pageTitle = getTitle();
 
     destroyDT();
+
+    // Check again because destroyDT may have changed the DOM
+    if (!tableRef.current) return;
 
     writeThead(hf);
     writeRows(rows, hf);
@@ -225,7 +251,8 @@ export default function Display({ page }) {
       autoWidth: false,
       deferRender: true,
       order: [],
-      destroy: false,
+      retrieve: false,
+      destroy: true,
       paging: true,
       info: true,
       lengthChange: true,
@@ -374,47 +401,185 @@ export default function Display({ page }) {
   //    effect has moved on (page changed) by the time the network call
   //    resolves, the result is silently discarded instead of corrupting
   //    the table that now belongs to a different page. ───────────────────
+  const sortFolders = (folders) => {
+    return [...folders].sort((a, b) => {
+      const nameA = (a || "").trim();
+      const nameB = (b || "").trim();
+
+      // Assignment 1 and Assignment 2 first
+      const assignmentA = nameA.match(/^Assignment\s+(\d+)/i);
+      const assignmentB = nameB.match(/^Assignment\s+(\d+)/i);
+
+      if (assignmentA && assignmentB) {
+        return Number(assignmentA[1]) - Number(assignmentB[1]);
+      }
+
+      if (assignmentA) return -1;
+      if (assignmentB) return 1;
+
+      // Extract DD-MM-YYYY from folder name
+      const dateA = nameA.match(/\b(\d{2})-(\d{2})-(\d{4})\b/);
+      const dateB = nameB.match(/\b(\d{2})-(\d{2})-(\d{4})\b/);
+
+      // Date folders come before non-date folders
+      if (dateA && dateB) {
+        const dA = new Date(
+          Number(dateA[3]),
+          Number(dateA[2]) - 1,
+          Number(dateA[1])
+        );
+
+        const dB = new Date(
+          Number(dateB[3]),
+          Number(dateB[2]) - 1,
+          Number(dateB[1])
+        );
+
+        return dA - dB;
+      }
+
+      if (dateA) return -1;
+      if (dateB) return 1;
+
+      // Other folders alphabetically
+      return nameA.localeCompare(nameB);
+    });
+  };
   const fetchFolders = async (token) => {
+
     try {
-      const res = await fetch("https://samrat.cu.ma/api_data.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ page, type: "folders" }),
-        credentials: "include",
-      });
-      const data = await res.json();
-      if (requestTokenRef.current !== token) return; // stale — ignore
-      foldersRef.current = Array.isArray(data) ? data : [];
-    } catch {
+
+      const { data, error } = await supabase
+        .from("datacollection")
+        .select("folder")
+        .eq("menuname", PAGE_CONFIG[page]?.title)
+        .eq("status", 1)
+        .not("folder", "is", null);
+
+
+      if (error) {
+        console.log(error);
+        foldersRef.current = [];
+        return;
+      }
+
+
       if (requestTokenRef.current !== token) return;
+
+
+      const folders = [
+        ...new Set(
+          data.map(item => item.folder)
+        )
+      ];
+
+      const sortedFolders = sortFolders(folders);
+
+      foldersRef.current = sortedFolders;
+
+      renderFolderTabs(
+        sortedFolders,
+        activeFolderRef.current,
+        token
+      );
+
+
+    } catch (err) {
+
+      console.log(err);
       foldersRef.current = [];
+
     }
-    if (requestTokenRef.current !== token) return;
-    renderFolderTabs(foldersRef.current, activeFolderRef.current, token);
+
+  };
+  const sortReports = (rows) => {
+    return [...rows].sort((a, b) => {
+      const aNum = a.name?.match(/^STUDY\s+(\d+)/i)?.[1];
+      const bNum = b.name?.match(/^STUDY\s+(\d+)/i)?.[1];
+
+      if (aNum && bNum) return Number(aNum) - Number(bNum);
+      if (aNum) return -1;
+      if (bNum) return 1;
+
+      return 0;
+    });
   };
 
-  const fetchData = async (folder = "all", token) => {
-    if (requestTokenRef.current !== token) return; // already superseded
+  const fetchData = async (
+    folder = "all",
+    token
+  ) => {
+
+
+    if (requestTokenRef.current !== token)
+      return;
+
+
     writeLoading();
-    destroyDT();
+
+
     try {
-      const res = await fetch("https://samrat.cu.ma/api_data.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ page, type: "data", folder }),
-        credentials: "include",
+
+
+      let query = supabase
+        .from("datacollection")
+        .select("*")
+        .eq("status", 1)
+        .eq(
+          "menuname",
+          PAGE_CONFIG[page]?.title
+        );
+
+
+
+      if (folder !== "all") {
+        query = query.eq("folder", folder);
+      }
+
+
+
+      const { data, error } = await query;
+
+
+      if (error) {
+        console.log(error);
+        rowsRef.current = [];
+      }
+      else {
+
+        rowsRef.current =
+          PAGE_CONFIG[page]?.title === "Reports"
+            ? sortReports(data || [])
+            : data || [];
+
+      }
+
+
+
+      if (requestTokenRef.current !== token)
+        return;
+
+
+      requestAnimationFrame(() => {
+
+        if (
+          requestTokenRef.current === token &&
+          tableRef.current
+        ) {
+          initDT(rowsRef.current);
+        }
+
       });
-      const data = await res.json();
-      if (requestTokenRef.current !== token) return; // stale — ignore
-      rowsRef.current = Array.isArray(data) ? data : [];
-    } catch {
-      if (requestTokenRef.current !== token) return;
+
+
+
+    } catch (err) {
+
+      console.log(err);
       rowsRef.current = [];
+
     }
-    requestAnimationFrame(() => {
-      if (requestTokenRef.current !== token) return; // stale — ignore
-      initDT(rowsRef.current);
-    });
+
   };
 
   // ── Mount / page prop change ──────────────────────────────────────────────
@@ -448,9 +613,14 @@ export default function Display({ page }) {
     document.addEventListener("click", onOutside);
 
     return () => {
-      document.removeEventListener("click", onOutside);
-      destroyDT(); // must happen BEFORE React removes <table> from DOM
-    };
+
+  // Invalidate any pending async request
+  requestTokenRef.current += 1;
+
+  document.removeEventListener("click", onOutside);
+
+  destroyDT();
+};
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 

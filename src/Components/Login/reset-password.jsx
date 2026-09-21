@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../../supabase";
 
 const ResetPassword = () => {
   const [newPassword, setNewPassword] = useState("");
@@ -9,6 +11,7 @@ const ResetPassword = () => {
 
   const email = sessionStorage.getItem("reset_email");
   const resetToken = sessionStorage.getItem("reset_token");
+  const navigate = useNavigate();
 
   // ✅ Theme setup (same as login)
   useEffect(() => {
@@ -17,8 +20,8 @@ const ResetPassword = () => {
 
     if (document.documentElement.hasAttribute("data-bs-theme-mode")) {
       themeMode = document.documentElement.getAttribute("data-bs-theme-mode");
-    } else if (localStorage.getItem("data-bs-theme")) {
-      themeMode = localStorage.getItem("data-bs-theme");
+    } else if (sessionStorage.getItem("data-bs-theme")) {
+      themeMode = sessionStorage.getItem("data-bs-theme");
     } else {
       themeMode = defaultThemeMode;
     }
@@ -35,9 +38,9 @@ const ResetPassword = () => {
   // If someone lands here directly without verifying OTP, send them back
   useEffect(() => {
     if (!email || !resetToken) {
-      window.location.href = "/forgot-password";
+      navigate("/login", { replace: true });
     }
-  }, [email, resetToken]);
+  }, [email, resetToken, navigate]);
 
   const showAlert = (type, title, message) => {
     setAlert({ type, title, message });
@@ -47,63 +50,96 @@ const ResetPassword = () => {
     e.preventDefault();
 
     if (!newPassword || !confirmPassword) {
-      showAlert("danger", "Error", "Please fill all fields");
-      return;
+      return showAlert("danger", "Error", "Please fill all fields");
     }
 
     if (newPassword.length < 6) {
-      showAlert("danger", "Error", "Password must be at least 6 characters");
-      return;
+      return showAlert(
+        "danger",
+        "Error",
+        "Password must be at least 6 characters"
+      );
     }
 
     if (newPassword !== confirmPassword) {
-      showAlert("danger", "Error", "Passwords do not match");
-      return;
+      return showAlert("danger", "Error", "Passwords do not match");
     }
 
     setLoading(true);
     setAlert(null);
 
     try {
-      const response = await fetch("https://samrat.cu.ma/reset_password.php", {
+      // Check OTP was verified
+      const { data: resetData, error: resetError } = await supabase
+        .from("password_resets")
+        .select("*")
+        .eq("email", email)
+        .eq("verified", true)
+        .order("id", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (resetError || !resetData) {
+        showAlert(
+          "danger",
+          "Error",
+          "OTP verification not found. Please verify OTP again."
+        );
+        setLoading(false);
+        return;
+      }
+
+      // Update password
+      // Update password
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({
+          password: newPassword,
+        })
+        .eq("email", email);
+
+      if (updateError) throw updateError;
+
+      // Delete OTP record
+      await supabase
+        .from("password_resets")
+        .delete()
+        .eq("id", resetData.id);
+
+      // Send confirmation email
+      const mailResponse = await fetch("https://samrat.cu.ma/password_updated_mail.php", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email,
-          reset_token: resetToken,
-          new_password: newPassword,
         }),
       });
 
-      const res = await response.json();
+      const mailRes = await mailResponse.json();
+      // Remove session
+      sessionStorage.removeItem("reset_email");
+      sessionStorage.removeItem("reset_token");
 
-      if (res.status === 1) {
-        showAlert(
-          "primary",
-          "Success",
-          res.msg || "Password updated successfully. A confirmation email has been sent."
-        );
+      setDone(true);
 
-        // cleanup temp session data
-        sessionStorage.removeItem("reset_email");
-        sessionStorage.removeItem("reset_token");
+      showAlert(
+        "success",
+        "Success",
+        "Password updated successfully."
+      );
 
-        setDone(true);
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
 
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 2000);
-      } else {
-        showAlert("danger", "Error", res.msg);
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error(error);
-      showAlert("danger", "Error", "Something went wrong. Try again.");
-      setLoading(false);
+    } catch (err) {
+      console.log(err);
+      showAlert("danger", "Error", err.message);
     }
+
+    setLoading(false);
   };
 
   return (

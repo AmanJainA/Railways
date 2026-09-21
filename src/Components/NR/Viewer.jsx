@@ -4,7 +4,7 @@ import ExcelJS from "exceljs";
 import mammoth from "mammoth";
 import * as pdfjsLib from "pdfjs-dist";
 import JSZip from "jszip";
-
+import { supabase } from "../../supabase";
 // PDF worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -78,50 +78,69 @@ export default function Viewer() {
 
   /* ================= FETCH FILE ================= */
   useEffect(() => {
-    if (!fileParam) return;
+  if (!fileParam) return;
 
-    // =========================
-    // SHAREPOINT DIRECT VIEWER
-    // =========================
-    if (isSharePointFile) {
-  let spUrl = fileParam;
+  if (isSharePointFile) {
+    let spUrl = fileParam;
 
-  spUrl = spUrl.replace(/[?&]download=1/g, "");
-  spUrl = spUrl.replace(/[?&]web=0/g, "");
+    spUrl = spUrl.replace(/[?&]download=1/g, "");
+    spUrl = spUrl.replace(/[?&]web=0/g, "");
 
-  if (spUrl.includes("?")) {
-    spUrl += "&web=1&download=0";
-  } else {
-    spUrl += "?web=1&download=0";
+    if (spUrl.includes("?")) {
+      spUrl += "&web=1&download=0";
+    } else {
+      spUrl += "?web=1&download=0";
+    }
+
+    window.location.replace(spUrl);
+    return;
   }
 
-  // 🚀 DIRECT OPEN (no viewer, no popup)
-  window.location.replace(spUrl);
-  return;
-}
+  const loadFile = async () => {
+    try {
 
-    // =========================
-    // LOCAL FILE FETCH
-    // =========================
-    fetch(
-      `http://localhost/ext/API/getFile.php?file=${encodeURIComponent(fileParam)}`,
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        data.ext = (data.ext || getExtensionFromUrl(fileParam))
-          .toString()
-          .trim()
-          .toLowerCase();
+      setLoading(true);
 
-        setFile(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Fetch error:", err);
-        setError("Failed to fetch file data");
-        setLoading(false);
+      const { data, error } = await supabase.storage
+        .from("documents")
+        .download(fileParam);
+
+      if (error) throw error;
+
+      const buffer = await data.arrayBuffer();
+
+      const bytes = new Uint8Array(buffer);
+
+      let binary = "";
+
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+
+      const base64 = btoa(binary);
+
+      setFile({
+        name: fileParam.split("/").pop(),
+        ext: fileParam.split(".").pop().toLowerCase(),
+        data: base64,
       });
-  }, [fileParam, isSharePointFile]);
+
+      setLoading(false);
+
+    } catch (err) {
+
+      console.error(err);
+
+      setError(err.message);
+
+      setLoading(false);
+
+    }
+  };
+
+  loadFile();
+
+}, [fileParam]);
 
   const getExtensionFromUrl = (url) => {
     try {
@@ -538,7 +557,6 @@ export default function Viewer() {
       <main>
         {isImage && <canvas ref={canvasRef} id="img-canvas"></canvas>}
 
-        
         {isPdf && <div ref={pdfRef} id="pdf-scroller"></div>}
 
         {isExcel && (

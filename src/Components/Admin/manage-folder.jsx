@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const API_BASE = "https://samrat.cu.ma";
+import { supabase } from "../../supabase";
 
 const ManageFolder = () => {
   const navigate = useNavigate();
-  const role = (localStorage.getItem("role") || "").toLowerCase();
+  const role = (sessionStorage.getItem("role") || "").toLowerCase();
   const isAdmin = role === "admin";
-
+  const username = sessionStorage.getItem("user");
   const [menus, setMenus] = useState([]);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,26 +19,42 @@ const ManageFolder = () => {
   const [deleteId, setDeleteId] = useState(null);
 
   useEffect(() => {
-    
     fetchMenus();
     fetchFolders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchMenus = () => {
-    fetch(`${API_BASE}/menu_master.php?action=list`)
-      .then((res) => res.json())
-      .then((data) => setMenus(data.status === 1 ? data.data : []))
-      .catch(() => setMenus([]));
+  const fetchMenus = async () => {
+    const { data, error } = await supabase
+      .from("menu_master")
+      .select("*")
+      .order("id", { ascending: true });
+
+    if (error) {
+      console.log(error);
+      setMenus([]);
+      return;
+    }
+
+    setMenus(data);
   };
 
-  const fetchFolders = () => {
+  const fetchFolders = async () => {
     setLoading(true);
-    fetch(`${API_BASE}/folder_master.php?action=list`)
-      .then((res) => res.json())
-      .then((data) => setRows(data.status === 1 ? data.data : []))
-      .catch(() => setRows([]))
-      .finally(() => setLoading(false));
+
+    const { data, error } = await supabase
+      .from("folder_master")
+      .select("*")
+      .order("id", { ascending: true });
+
+    if (error) {
+      console.log(error);
+      setRows([]);
+    } else {
+      setRows(data);
+    }
+
+    setLoading(false);
   };
 
   const showAlert = (type, title, message) => {
@@ -49,27 +64,34 @@ const ManageFolder = () => {
 
   const handleAdd = async (e) => {
     e.preventDefault();
+
     if (!form.menuname || !form.foldername.trim()) return;
+
     setSaving(true);
-    try {
-      const res = await fetch(`${API_BASE}/folder_master.php`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "add", menuname: form.menuname, foldername: form.foldername.trim() }),
+
+    const { error } = await supabase.from("folder_master").insert([
+      {
+        menuname: form.menuname,
+        foldername: form.foldername.trim(),
+
+        status: 1,
+        created_by: username,
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    if (error) {
+      showAlert("danger", "Error", error.message);
+    } else {
+      showAlert("success", "Success", "Folder Added Successfully");
+      setForm({
+        menuname: "",
+        foldername: "",
       });
-      const data = await res.json();
-      if (data.status === 1) {
-        showAlert("primary", "Success", data.msg);
-        setForm({ ...form, foldername: "" });
-        fetchFolders();
-      } else {
-        showAlert("danger", "Error", data.msg);
-      }
-    } catch (err) {
-      showAlert("danger", "Error", err.message);
-    } finally {
-      setSaving(false);
+      fetchFolders();
     }
+
+    setSaving(false);
   };
 
   const startEdit = (row) => {
@@ -84,59 +106,58 @@ const ManageFolder = () => {
 
   const saveEdit = async (id) => {
     if (!editValue.menuname || !editValue.foldername.trim()) return;
+
     setSaving(true);
-    try {
-      const res = await fetch(`${API_BASE}/folder_master.php`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "edit",
-          id,
-          menuname: editValue.menuname,
-          foldername: editValue.foldername.trim(),
-        }),
-      });
-      const data = await res.json();
-      if (data.status === 1) {
-        showAlert("primary", "Success", data.msg);
-        cancelEdit();
-        fetchFolders();
-      } else {
-        showAlert("danger", "Error", data.msg);
-      }
-    } catch (err) {
-      showAlert("danger", "Error", err.message);
-    } finally {
-      setSaving(false);
+
+    const { error } = await supabase
+      .from("folder_master")
+      .update({
+        menuname: editValue.menuname,
+        foldername: editValue.foldername.trim(),
+
+        created_by: username,
+      })
+      .eq("id", id);
+
+    if (error) {
+      showAlert("danger", "Error", error.message);
+    } else {
+      showAlert("success", "Success", "Folder Updated Successfully");
+      cancelEdit();
+      fetchFolders();
     }
+
+    setSaving(false);
   };
 
   const confirmDelete = async (id) => {
     setSaving(true);
-    try {
-      const res = await fetch(`${API_BASE}/folder_master.php`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "delete", id }),
-      });
-      const data = await res.json();
-      if (data.status === 1) {
-        showAlert("primary", "Success", data.msg);
-        fetchFolders();
-      } else {
-        showAlert("danger", "Error", data.msg);
-      }
-    } catch (err) {
-      showAlert("danger", "Error", err.message);
-    } finally {
-      setSaving(false);
-      setDeleteId(null);
+
+    const { error } = await supabase
+      .from("folder_master")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      showAlert("danger", "Error", error.message);
+    } else {
+      showAlert("success", "Success", "Folder Deleted Successfully");
+      fetchFolders();
     }
+
+    setDeleteId(null);
+    setSaving(false);
   };
 
   return (
-    <div id="kt_body" className="header-fixed header-tablet-and-mobile-fixed aside-fixed">
-      <div className="content d-flex flex-column flex-column-fluid fs-6" id="kt_content">
+    <div
+      id="kt_body"
+      className="header-fixed header-tablet-and-mobile-fixed aside-fixed"
+    >
+      <div
+        className="content d-flex flex-column flex-column-fluid fs-6"
+        id="kt_content"
+      >
         <div className="container-xxl mt-5">
           {alert && (
             <div className={`alert alert-${alert.type} mb-5`}>
@@ -162,12 +183,16 @@ const ManageFolder = () => {
                   <select
                     className="form-select form-select-solid"
                     value={form.menuname}
-                    onChange={(e) => setForm({ ...form, menuname: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, menuname: e.target.value })
+                    }
                     required
                   >
                     <option value="">Select Menu</option>
                     {menus.map((m) => (
-                      <option key={m.id} value={m.menuname}>{m.menuname}</option>
+                      <option key={m.id} value={m.menuname}>
+                        {m.menuname}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -178,12 +203,18 @@ const ManageFolder = () => {
                     className="form-control form-control-solid"
                     placeholder="e.g. Nangia on boarding info"
                     value={form.foldername}
-                    onChange={(e) => setForm({ ...form, foldername: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, foldername: e.target.value })
+                    }
                     required
                   />
                 </div>
                 <div className="col-md-3">
-                  <button type="submit" className="btn btn-primary w-100" disabled={saving}>
+                  <button
+                    type="submit"
+                    className="btn btn-primary w-100"
+                    disabled={saving}
+                  >
                     {saving ? "Saving..." : "Add Folder"}
                   </button>
                 </div>
@@ -194,7 +225,9 @@ const ManageFolder = () => {
           <div className="card shadow-sm">
             <div className="card-header d-flex align-items-center justify-content-between">
               <h3 className="card-title fw-bold mb-0">All Folders</h3>
-              <span className="badge badge-light-primary fs-7">{rows.length} Total</span>
+              <span className="badge badge-light-primary fs-7">
+                {rows.length} Total
+              </span>
             </div>
             <div className="card-body p-0">
               <div className="table-responsive">
@@ -204,15 +237,31 @@ const ManageFolder = () => {
                       <th className="ps-5">#</th>
                       <th>Menu</th>
                       <th>Folder Name</th>
+                      <th>Status</th>
+                      <th>Created By</th>
                       <th>Created</th>
                       <th className="pe-5 text-end">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan="5" className="text-center py-10 text-muted">Loading...</td></tr>
+                      <tr>
+                        <td
+                          colSpan="5"
+                          className="text-center py-10 text-muted"
+                        >
+                          Loading...
+                        </td>
+                      </tr>
                     ) : rows.length === 0 ? (
-                      <tr><td colSpan="5" className="text-center py-10 text-muted">No folders yet</td></tr>
+                      <tr>
+                        <td
+                          colSpan="5"
+                          className="text-center py-10 text-muted"
+                        >
+                          No folders yet
+                        </td>
+                      </tr>
                     ) : (
                       rows.map((r, i) => (
                         <tr key={r.id}>
@@ -222,14 +271,23 @@ const ManageFolder = () => {
                               <select
                                 className="form-select form-select-sm"
                                 value={editValue.menuname}
-                                onChange={(e) => setEditValue({ ...editValue, menuname: e.target.value })}
+                                onChange={(e) =>
+                                  setEditValue({
+                                    ...editValue,
+                                    menuname: e.target.value,
+                                  })
+                                }
                               >
                                 {menus.map((m) => (
-                                  <option key={m.id} value={m.menuname}>{m.menuname}</option>
+                                  <option key={m.id} value={m.menuname}>
+                                    {m.menuname}
+                                  </option>
                                 ))}
                               </select>
                             ) : (
-                              <span className="badge bg-light-primary">{r.menuname}</span>
+                              <span className="badge bg-light-primary">
+                                {r.menuname}
+                              </span>
                             )}
                           </td>
                           <td>
@@ -238,14 +296,33 @@ const ManageFolder = () => {
                                 type="text"
                                 className="form-control form-control-sm"
                                 value={editValue.foldername}
-                                onChange={(e) => setEditValue({ ...editValue, foldername: e.target.value })}
+                                onChange={(e) =>
+                                  setEditValue({
+                                    ...editValue,
+                                    foldername: e.target.value,
+                                  })
+                                }
                                 autoFocus
                               />
                             ) : (
-                              <span className="fw-semibold text-gray-800">{r.foldername}</span>
+                              <span className="fw-semibold text-gray-800">
+                                {r.foldername}
+                              </span>
                             )}
                           </td>
-                          <td>{r.created_at || "-"}</td>
+                          <td>{r.status || "-"}</td>
+                          <td>{r.created_by || "-"}</td>
+                          <td>
+                            {r.created_at
+                              ? new Date(r.created_at).toLocaleString("en-IN", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "-"}
+                          </td>
                           <td className="pe-5 text-end">
                             {editId === r.id ? (
                               <>
@@ -256,13 +333,18 @@ const ManageFolder = () => {
                                 >
                                   Save
                                 </button>
-                                <button className="btn btn-sm btn-light" onClick={cancelEdit}>
+                                <button
+                                  className="btn btn-sm btn-light"
+                                  onClick={cancelEdit}
+                                >
                                   Cancel
                                 </button>
                               </>
                             ) : deleteId === r.id ? (
                               <>
-                                <span className="me-2 text-danger fs-8">Delete this folder?</span>
+                                <span className="me-2 text-danger fs-8">
+                                  Delete this folder?
+                                </span>
                                 <button
                                   className="btn btn-sm btn-danger me-1"
                                   disabled={saving}
@@ -270,7 +352,10 @@ const ManageFolder = () => {
                                 >
                                   Yes
                                 </button>
-                                <button className="btn btn-sm btn-light" onClick={() => setDeleteId(null)}>
+                                <button
+                                  className="btn btn-sm btn-light"
+                                  onClick={() => setDeleteId(null)}
+                                >
                                   No
                                 </button>
                               </>

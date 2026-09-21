@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { supabase } from "../../supabase";
 import "./Dashboard.css";
 import Footer from "../Footer/Footer";
 import { useNavigate } from "react-router-dom";
@@ -8,17 +8,30 @@ import DashboardCard from "./DashboardCard";
 const Dashboard = () => {
   const navigate = useNavigate();
   const [data, setData] = useState({
-    counts: {},
+    counts: {
+      mydata: 0,
+      nangia: 0,
+      nr: 0,
+    },
     nrMenus: [],
     visitData: {},
-    stats: {},
+    stats: {
+      totalFolders: 0,
+      totalFiles: 0,
+    },
   });
 
   useEffect(() => {
     fetchData();
   }, []);
-  const handleOpen = (slug) => {
-    localStorage.setItem("current_page", slug);
+  const handleOpen = (menu) => {
+    const slug = menu
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "")
+      .replace(/[_-]/g, "");
+
+    sessionStorage.setItem("current_page", slug);
     navigate("/nr/display");
   };
 
@@ -30,9 +43,104 @@ const Dashboard = () => {
   };
   const fetchData = async () => {
     try {
-      const res = await axios.get("https://samrat.cu.ma/dashboard.php");
-      setData(res.data);
-      console.log(res.data);
+      // Fetch all files
+      const { data: files, error } = await supabase
+        .from("datacollection")
+        .select("*");
+
+      if (error) throw error;
+
+      // -----------------------
+      // Dashboard Counts
+      // -----------------------
+
+      const myData = files.filter((item) => item.menuname === "mydata").length;
+
+      const nangia = files.filter((item) => item.menuname === "Nangia").length;
+
+      const nrData = files.length - myData - nangia;
+
+      // -----------------------
+      // Latest Folder
+      // -----------------------
+
+      const menuMap = {};
+
+      files.forEach((item) => {
+        const title = item.menuname?.trim();
+
+        if (!title) return;
+
+        const slug = title
+          .toLowerCase()
+          .replace(/\s+/g, "")
+          .replace(/[_-]/g, "");
+
+        if (!menuMap[slug]) {
+          menuMap[slug] = {
+            name: title,
+            slug,
+            count: 0,
+          };
+        }
+
+        menuMap[slug].count++;
+      });
+
+      const nrMenus = Object.values(menuMap).filter(
+        (menu) => menu.slug !== "mydata" && menu.slug !== "nangia"
+      );
+
+      // -----------------------
+      // Visit Data
+      // -----------------------
+
+      const visitFiles = files.filter((item) => {
+        const menu = item.menuname?.trim().toLowerCase();
+
+        const isPdf =
+          item.type?.toLowerCase() === "pdf" ||
+          item.links?.toLowerCase().endsWith(".pdf");
+
+        return menu === "visit data" && isPdf;
+      });
+
+      const visitData = {
+        Parcel: [],
+        Goods: [],
+      };
+
+      visitFiles.forEach((item) => {
+        const folder = item.folder?.trim().toLowerCase();
+
+        if (folder === "parcel") {
+          visitData.Parcel.push(item);
+        } else if (folder === "goods") {
+          visitData.Goods.push(item);
+        }
+      });
+
+      // -----------------------
+
+      setData({
+        counts: {
+          mydata: myData,
+          nangia: nangia,
+          nr: nrData,
+        },
+
+        nrMenus,
+
+        visitData,
+
+        stats: {
+          totalFolders: Object.values(visitData).filter(
+            (x) => x.length > 0
+          ).length,
+
+          totalFiles: visitFiles.length,
+        },
+      });
     } catch (err) {
       console.error(err);
     }
@@ -138,7 +246,7 @@ const Dashboard = () => {
           </div>
           <div className="col-xl-7 mb-5 mb-xl-10">
             <div className="row g-5 g-xl-10 h-xxl-50 mb-0 mb-xl-10">
-              <div className="col-xxl-6 mb-5 mb-xl-0">
+              <div className="col-xxl-12 mb-5 mb-xl-0">
                 <div className="card card-flush h-lg-100">
                   <div className="card-header pt-7 mb-5">
                     <h3 className="card-title align-items-start flex-column">
@@ -154,7 +262,9 @@ const Dashboard = () => {
                     <div className="card-toolbar">
                       <button
                         onClick={() =>
-                          navigate("/nr/display", { state: { menu: "Visit Data" }, })
+                          navigate("/nr/display", {
+                            state: { menu: "Visit Data" },
+                          })
                         }
                         className="btn btn-sm btn-light"
                       >

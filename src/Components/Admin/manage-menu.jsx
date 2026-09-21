@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const API_BASE = "https://samrat.cu.ma";
+import { supabase } from "../../supabase";
 
 const ManageMenu = () => {
   const navigate = useNavigate();
-  const role = (localStorage.getItem("role") || "").toLowerCase();
+  const role = (sessionStorage.getItem("role") || "").toLowerCase();
   const isAdmin = role === "admin";
-
+  const createdBy = sessionStorage.getItem("user") || "Unknown";
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState(null);
@@ -19,20 +18,33 @@ const ManageMenu = () => {
   const [deleteId, setDeleteId] = useState(null);
 
   useEffect(() => {
-    
+    const user = sessionStorage.getItem("user");
+
+    if (!user) {
+      navigate("/");
+      return;
+    }
+
     fetchMenus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchMenus = () => {
+  const fetchMenus = async () => {
     setLoading(true);
-    fetch(`${API_BASE}/menu_master.php?action=list`)
-      .then((res) => res.json())
-      .then((data) => setRows(data.status === 1 ? data.data : []))
-      .catch(() => setRows([]))
-      .finally(() => setLoading(false));
-  };
 
+    const { data, error } = await supabase
+      .from("menu_master")
+      .select("*")
+      .order("id", { ascending: true });
+
+    if (error) {
+      console.log(error);
+      setRows([]);
+    } else {
+      setRows(data);
+    }
+
+    setLoading(false);
+  };
   const showAlert = (type, title, message) => {
     setAlert({ type, title, message });
     setTimeout(() => setAlert(null), 4000);
@@ -40,27 +52,29 @@ const ManageMenu = () => {
 
   const handleAdd = async (e) => {
     e.preventDefault();
+
     if (!menuName.trim()) return;
+
     setSaving(true);
-    try {
-      const res = await fetch(`${API_BASE}/menu_master.php`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "add", menuname: menuName.trim() }),
-      });
-      const data = await res.json();
-      if (data.status === 1) {
-        showAlert("primary", "Success", data.msg);
-        setMenuName("");
-        fetchMenus();
-      } else {
-        showAlert("danger", "Error", data.msg);
-      }
-    } catch (err) {
-      showAlert("danger", "Error", err.message);
-    } finally {
-      setSaving(false);
+
+    const { error } = await supabase.from("menu_master").insert([
+      {
+        menuname: menuName.trim(),
+        status: 1,
+        created_by: createdBy,
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    if (error) {
+      showAlert("danger", "Error", error.message);
+    } else {
+      showAlert("success", "Success", "Menu added successfully.");
+      setMenuName("");
+      fetchMenus();
     }
+
+    setSaving(false);
   };
 
   const startEdit = (row) => {
@@ -75,56 +89,52 @@ const ManageMenu = () => {
 
   const saveEdit = async (id) => {
     if (!editValue.trim()) return;
+
     setSaving(true);
-    try {
-      const res = await fetch(`${API_BASE}/menu_master.php`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "edit", id, menuname: editValue.trim() }),
-      });
-      const data = await res.json();
-      if (data.status === 1) {
-        showAlert("primary", "Success", data.msg);
-        cancelEdit();
-        fetchMenus();
-      } else {
-        showAlert("danger", "Error", data.msg);
-      }
-    } catch (err) {
-      showAlert("danger", "Error", err.message);
-    } finally {
-      setSaving(false);
+
+    const { error } = await supabase
+      .from("menu_master")
+      .update({
+        menuname: editValue.trim(),
+      })
+      .eq("id", id);
+
+    if (error) {
+      showAlert("danger", "Error", error.message);
+    } else {
+      showAlert("success", "Success", "Menu updated.");
+      cancelEdit();
+      fetchMenus();
     }
+
+    setSaving(false);
   };
 
   const confirmDelete = async (id) => {
     setSaving(true);
-    try {
-      const res = await fetch(`${API_BASE}/menu_master.php`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "delete", id }),
-      });
-      const data = await res.json();
-      if (data.status === 1) {
-        showAlert("primary", "Success", data.msg);
-        fetchMenus();
-      } else {
-        showAlert("danger", "Error", data.msg);
-      }
-    } catch (err) {
-      showAlert("danger", "Error", err.message);
-    } finally {
-      setSaving(false);
-      setDeleteId(null);
+
+    const { error } = await supabase.from("menu_master").delete().eq("id", id);
+
+    if (error) {
+      showAlert("danger", "Error", error.message);
+    } else {
+      showAlert("success", "Success", "Menu deleted.");
+      fetchMenus();
     }
+
+    setSaving(false);
+    setDeleteId(null);
   };
 
-  
-
   return (
-    <div id="kt_body" className="header-fixed header-tablet-and-mobile-fixed aside-fixed">
-      <div className="content d-flex flex-column flex-column-fluid fs-6" id="kt_content">
+    <div
+      id="kt_body"
+      className="header-fixed header-tablet-and-mobile-fixed aside-fixed"
+    >
+      <div
+        className="content d-flex flex-column flex-column-fluid fs-6"
+        id="kt_content"
+      >
         <div className="container-xxl mt-5">
           {alert && (
             <div className={`alert alert-${alert.type} mb-5`}>
@@ -153,7 +163,11 @@ const ManageMenu = () => {
                   onChange={(e) => setMenuName(e.target.value)}
                   required
                 />
-                <button type="submit" className="btn btn-primary px-6" disabled={saving}>
+                <button
+                  type="submit"
+                  className="btn btn-primary px-6"
+                  disabled={saving}
+                >
                   {saving ? "Saving..." : "Add Menu"}
                 </button>
               </form>
@@ -163,7 +177,9 @@ const ManageMenu = () => {
           <div className="card shadow-sm">
             <div className="card-header d-flex align-items-center justify-content-between">
               <h3 className="card-title fw-bold mb-0">All Menus</h3>
-              <span className="badge badge-light-primary fs-7">{rows.length} Total</span>
+              <span className="badge badge-light-primary fs-7">
+                {rows.length} Total
+              </span>
             </div>
             <div className="card-body p-0">
               <div className="table-responsive">
@@ -172,15 +188,30 @@ const ManageMenu = () => {
                     <tr className="text-muted fw-bold fs-8 text-uppercase gs-0 bg-light">
                       <th className="ps-5">#</th>
                       <th>Menu Name</th>
-                      <th>Created</th>
+                      <th>Created By</th>
+                      <th>Date Time</th>
                       <th className="pe-5 text-end">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan="4" className="text-center py-10 text-muted">Loading...</td></tr>
+                      <tr>
+                        <td
+                          colSpan="4"
+                          className="text-center py-10 text-muted"
+                        >
+                          Loading...
+                        </td>
+                      </tr>
                     ) : rows.length === 0 ? (
-                      <tr><td colSpan="4" className="text-center py-10 text-muted">No menus yet</td></tr>
+                      <tr>
+                        <td
+                          colSpan="4"
+                          className="text-center py-10 text-muted"
+                        >
+                          No menus yet
+                        </td>
+                      </tr>
                     ) : (
                       rows.map((r, i) => (
                         <tr key={r.id}>
@@ -195,10 +226,23 @@ const ManageMenu = () => {
                                 autoFocus
                               />
                             ) : (
-                              <span className="fw-semibold text-gray-800">{r.menuname}</span>
+                              <span className="fw-semibold text-gray-800">
+                                {r.menuname}
+                              </span>
                             )}
                           </td>
-                          <td>{r.created_at || "-"}</td>
+                          <td>{r.created_by || "-"}</td>
+                          <td>
+                            {r.created_at
+                              ? new Date(r.created_at).toLocaleString("en-IN", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "-"}
+                          </td>
                           <td className="pe-5 text-end">
                             {editId === r.id ? (
                               <>
@@ -209,13 +253,18 @@ const ManageMenu = () => {
                                 >
                                   Save
                                 </button>
-                                <button className="btn btn-sm btn-light" onClick={cancelEdit}>
+                                <button
+                                  className="btn btn-sm btn-light"
+                                  onClick={cancelEdit}
+                                >
                                   Cancel
                                 </button>
                               </>
                             ) : deleteId === r.id ? (
                               <>
-                                <span className="me-2 text-danger fs-8">Delete this menu?</span>
+                                <span className="me-2 text-danger fs-8">
+                                  Delete this menu?
+                                </span>
                                 <button
                                   className="btn btn-sm btn-danger me-1"
                                   disabled={saving}
@@ -223,7 +272,10 @@ const ManageMenu = () => {
                                 >
                                   Yes
                                 </button>
-                                <button className="btn btn-sm btn-light" onClick={() => setDeleteId(null)}>
+                                <button
+                                  className="btn btn-sm btn-light"
+                                  onClick={() => setDeleteId(null)}
+                                >
                                   No
                                 </button>
                               </>

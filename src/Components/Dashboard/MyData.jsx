@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import $ from "jquery";
-
-// Export dependencies
+import { supabase } from "../../supabase";
 import JSZip from "jszip";
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
@@ -50,9 +49,22 @@ const MyData = () => {
 
   // ===== FETCH =====
   useEffect(() => {
-    fetch("https://samrat.cu.ma/mydata.php")
-      .then((res) => res.json())
-      .then((res) => setData(res));
+    const fetchData = async () => {
+      const { data, error } = await supabase
+        .from("datacollection")
+        .select("id,name,type,links,menuname")
+        .eq("menuname", "mydata")
+        .order("id", { ascending: false });
+
+      if (error) {
+        console.log(error);
+        return;
+      }
+
+      setData(data);
+    };
+
+    fetchData();
   }, []);
 
   // ===== DATATABLE INIT =====

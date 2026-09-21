@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Footer from "../Footer/Footer";
+import { supabase } from "../../supabase";
 
 const ChangePassword = () => {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -8,66 +9,82 @@ const ChangePassword = () => {
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
 
-  const username = localStorage.getItem("user");
+  const userId = sessionStorage.getItem("user_id");
+  const username = sessionStorage.getItem("user");
 
   const showAlert = (type, title, message) => {
     setAlert({ type, title, message });
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      return showAlert("danger", "Error", "Please fill all fields.");
-    }
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return showAlert("danger", "Error", "Please fill all fields.");
+  }
 
-    if (newPassword.length < 6) {
+  if (newPassword.length < 6) {
+    return showAlert(
+      "danger",
+      "Error",
+      "Password must be at least 6 characters."
+    );
+  }
+
+  if (newPassword !== confirmPassword) {
+    return showAlert("danger", "Error", "Passwords do not match.");
+  }
+
+  setLoading(true);
+
+  try {
+    // Check current password
+    const { data: user, error } = await supabase
+  .from("users")
+  .select("*")
+  .eq("id", userId)
+  .eq("username", username)
+  .eq("password", currentPassword)
+  .single();
+
+    if (error || !user) {
+      setLoading(false);
       return showAlert(
         "danger",
         "Error",
-        "Password must be at least 6 characters."
+        "Current password is incorrect."
       );
     }
 
-    if (newPassword !== confirmPassword) {
-      return showAlert("danger", "Error", "Passwords do not match.");
+    // Update password
+    const { error: updateError } = await supabase
+      .from("users")
+      .update({
+        password: newPassword,
+      })
+      .eq("id", userId);
+
+    if (updateError) {
+      setLoading(false);
+      return showAlert("danger", "Error", updateError.message);
     }
 
-    setLoading(true);
+    showAlert(
+      "success",
+      "Success",
+      "Password changed successfully."
+    );
 
-    try {
-      const response = await fetch(
-        "https://samrat.cu.ma/change_password.php",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username,
-            current_password: currentPassword,
-            new_password: newPassword,
-          }),
-        }
-      );
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
 
-      const res = await response.json();
+  } catch (err) {
+    showAlert("danger", "Error", err.message);
+  }
 
-      if (res.status === 1) {
-        showAlert("success", "Success", res.msg);
-
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-      } else {
-        showAlert("danger", "Error", res.msg);
-      }
-    } catch (err) {
-      showAlert("danger", "Error", "Something went wrong.");
-    }
-
-    setLoading(false);
-  };
+  setLoading(false);
+};
 
   return (
     <>

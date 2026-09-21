@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./SidebarLayout.css";
 import logodefault from "../Assets/logos/logo-default.svg";
 import logominimize from "../Assets/logos/logo-compact.svg";
-
+import { supabase } from "../../supabase";
 const pageTitles = {
   "/dashboard": "Dashboard",
   "/mydata": "My Data",
@@ -13,6 +13,9 @@ const pageTitles = {
   "/pendingapprovals": "Pending Approvals",
   "/managefolder": "Manage Folder",
   "/managemenu": "Manage Menu",
+  "/pageactivity": "Page Activity",
+  "/loginhistory": "Login History",
+  "/userprofiles": "User Profiles",
   "/uploadfile": "Upload Files",
   "/nr/dashboard": "NR Dashboard",
 };
@@ -38,6 +41,9 @@ const FILE_MGMT_PATHS = [
   "/managemenu",
   "/manageupload",
   "/pendingapprovals",
+  "/loginhistory",
+  "/userprofiles",
+  "/pageactivity",
 ];
 
 const SidebarLayout = ({ children }) => {
@@ -52,7 +58,7 @@ const SidebarLayout = ({ children }) => {
 
   const sessionPage =
     currentPath === "/nr/display"
-      ? localStorage.getItem("current_page") || ""
+      ? sessionStorage.getItem("current_page") || ""
       : "";
 
   const isNrActive = currentPath.startsWith("/nr");
@@ -61,10 +67,10 @@ const SidebarLayout = ({ children }) => {
   const [openNR, setOpenNR] = useState(isNrActive);
   const [openFiles, setOpenFiles] = useState(isFileMgmtActive);
 
-  const user = (localStorage.getItem("user") || "User").trim();
+  const user = (sessionStorage.getItem("user") || "User").trim();
 
-  const role = localStorage.getItem("role") || "user";
-  const email = localStorage.getItem("email");
+  const role = sessionStorage.getItem("role") || "user";
+  const email = sessionStorage.getItem("email");
 
   const isAdmin = role.toLowerCase() === "admin";
 
@@ -123,7 +129,7 @@ const SidebarLayout = ({ children }) => {
 
   useEffect(() => {
     if (!isAdmin && currentPath === "/nr/display") {
-      const page = localStorage.getItem("current_page");
+      const page = sessionStorage.getItem("current_page");
 
       if (!hasAccess(page)) {
         navigate(-1);
@@ -159,10 +165,93 @@ const SidebarLayout = ({ children }) => {
     currentPath === "/nr/display" && sessionPage
       ? sessionTitles[sessionPage] || "Data"
       : pageTitles[currentPath] || "Dashboard";
+  const logPageActivity = async (page = null) => {
+
+    try {
+      const userId = sessionStorage.getItem("user_id");
+      const username = sessionStorage.getItem("user");
+
+      if (!userId || !username) return;
+
+      const ua = navigator.userAgent;
+
+      const browser =
+        ua.includes("Edg") ? "Edge" :
+          ua.includes("Chrome") ? "Chrome" :
+            ua.includes("Firefox") ? "Firefox" :
+              ua.includes("Safari") ? "Safari" :
+                "Unknown";
+
+      const operatingSystem =
+        ua.includes("Windows") ? "Windows" :
+          ua.includes("Mac") ? "MacOS" :
+            ua.includes("Android") ? "Android" :
+              ua.includes("iPhone") || ua.includes("iPad") ? "iOS" :
+                ua.includes("Linux") ? "Linux" :
+                  "Unknown";
+
+      const deviceType =
+        /Mobi|Android|iPhone|iPad/i.test(ua)
+          ? "Mobile"
+          : "Desktop";
+
+      let ip = "";
+
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        const data = await res.json();
+        ip = data.ip;
+      } catch { }
+
+      let pageName = currentTitle;
+
+      if (page) {
+        pageName = sessionTitles[page] || page;
+      } else if (currentPath === "/nr/display") {
+        const slug = sessionStorage.getItem("current_page") || "";
+        pageName = sessionTitles[slug] || slug;
+      }
+
+      const now = new Date();
+
+      const { error } = await supabase
+        .from("page_activity")
+        .insert({
+          user_id: userId,
+          username,
+          page_name: pageName,
+          page_url: window.location.pathname,
+          ip_address: ip,
+          browser,
+          device_type: deviceType,
+          operating_system: operatingSystem,
+          visit_time: now.toISOString(),
+          activity_date: now.toISOString().split("T")[0],
+          visit_count: 1,
+        });
+
+      if (error) {
+        console.error(error);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    if (!currentPath) return;
+
+    logPageActivity();
+  }, [currentPath, sessionPage]);
+
 
   // NR navigation via localStorage (replaces PHP POST form)
-  const handleNrNavigation = (slug) => {
-    localStorage.setItem("current_page", slug);
+  const handleNrNavigation = async (slug) => {
+    sessionStorage.setItem("current_page", slug);
+
+    // Log immediately
+    await logPageActivity(slug);
+
     navigate("/nr/display");
   };
   return (
@@ -356,6 +445,58 @@ const SidebarLayout = ({ children }) => {
                         </Link>
                       </div>
                     )}
+                    {isAdmin && (
+                      <div className="menu-item">
+                        <Link
+                          className={`menu-link${currentPath === "/loginhistory" ? " active" : ""}`}
+                          to="/loginhistory"
+                        >
+                          <span className="menu-icon">
+                            <i className="ki-duotone ki-time fs-2">
+                              <span className="path1"></span>
+                              <span className="path2"></span>
+                            </i>
+                          </span>
+                          <span className="menu-title">Login History</span>
+                        </Link>
+                      </div>
+                    )}
+                    {isAdmin && (
+                      <div className="menu-item">
+                        <Link
+                          className={`menu-link${currentPath === "/userprofiles" ? " active" : ""}`}
+                          to="/userprofiles"
+                        >
+                          <span className="menu-icon">
+                            <i className="ki-duotone ki-profile-user fs-2">
+                              <span className="path1"></span>
+                              <span className="path2"></span>
+                              <span className="path3"></span>
+                              <span className="path4"></span>
+                            </i>
+                          </span>
+                          <span className="menu-title">User Profiles</span>
+                        </Link>
+                      </div>
+                    )}
+                    {isAdmin && (
+                      <div className="menu-item">
+                        <Link
+                          className={`menu-link${currentPath === "/pageactivity" ? " active" : ""}`}
+                          to="/pageactivity"
+                        >
+                          <span className="menu-icon">
+                            <i className="ki-duotone ki-chart-simple-2 fs-2">
+                              <span className="path1"></span>
+                              <span className="path2"></span>
+                              <span className="path3"></span>
+                              <span className="path4"></span>
+                            </i>
+                          </span>
+                          <span className="menu-title">Page Activity</span>
+                        </Link>
+                      </div>
+                    )}
 
                     {/* Pending Approvals - ADMIN ONLY */}
                     {isAdmin && (
@@ -519,7 +660,7 @@ const SidebarLayout = ({ children }) => {
                       height: "32px",
                       transition: "0.3s",
                     }}
-                    onClick={() => localStorage.clear()}
+                    onClick={() => sessionStorage.clear()}
                     title="Logout"
                   >
                     <i className="bi bi-box-arrow-right fs-5"></i>
@@ -629,7 +770,7 @@ const SidebarLayout = ({ children }) => {
                         to="/"
                         className="dropdown-item text-danger py-2"
                         onClick={() => {
-                          localStorage.clear();
+                          sessionStorage.clear();
                           setShowMenu(false);
                         }}
                       >

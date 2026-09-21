@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const API_BASE = "https://samrat.cu.ma";
+import { supabase } from "../../supabase";
 
 const fileColorsMap = {
   pdf: "danger", doc: "primary", docx: "primary",
@@ -11,7 +10,7 @@ const fileColorsMap = {
 
 const PendingApprovals = () => {
   const navigate = useNavigate();
-  const role = (localStorage.getItem("role") || "").toLowerCase();
+  const role = (sessionStorage.getItem("role") || "").toLowerCase();
   const isAdmin = role === "admin";
 
   const [rows, setRows] = useState([]);
@@ -30,13 +29,40 @@ const PendingApprovals = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchPending = () => {
+  const fetchPending = async () => {
     setLoading(true);
-    fetch(`${API_BASE}/pending_files.php`)
-      .then((res) => res.json())
-      .then((data) => setRows(data.status === 1 ? data.data : []))
-      .catch(() => setRows([]))
-      .finally(() => setLoading(false));
+
+    try {
+      // Pending files
+      const { data: files, error: fileError } = await supabase
+        .from("datacollection")
+        .select("*")
+        .eq("status", 0)
+        .order("uploaded_at", { ascending: false });
+
+      if (fileError) throw fileError;
+
+      // Users
+      const { data: users, error: userError } = await supabase
+        .from("users")
+        .select("username,email");
+
+      if (userError) throw userError;
+
+      // Merge email into each file row
+      const merged = (files || []).map((file) => ({
+        ...file,
+        email:
+          users.find((u) => u.username === file.uploaded_by)?.email || "",
+      }));
+
+      setRows(merged);
+    } catch (err) {
+      showAlert("danger", "Error", err.message);
+      setRows([]);
+    }
+
+    setLoading(false);
   };
 
   const showAlert = (type, title, message) => {
@@ -45,28 +71,67 @@ const PendingApprovals = () => {
   };
 
   const updateStatus = async (id, status, remark = "") => {
-    setBusyId(id);
-    try {
-      const res = await fetch(`${API_BASE}/update_status.php`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status, remark }),
-      });
-      const data = await res.json();
-      if (data.status === 1) {
-        showAlert("primary", "Success", data.msg);
-        setRows((prev) => prev.filter((r) => r.id !== id));
-      } else {
-        showAlert("danger", "Error", data.msg || "Action failed");
+  setBusyId(id);
+
+  try {
+    // Update in Supabase
+    const { error } = await supabase
+      .from("datacollection")
+      .update({
+        status,
+        remark,
+      })
+      .eq("id", id);
+
+    if (error) throw error;
+
+    // Find selected row
+    const row = rows.find((r) => r.id === id);
+
+    // Send Mail
+    if (row?.email) {
+      try {
+        const response = await fetch(
+          "https://samrat.cu.ma/send_status_mail.php",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: row.email,
+              username: row.uploaded_by,
+              fileName: row.name,
+              menu: row.menuname,
+              status,
+              remark,
+            }),
+          }
+        );
+
+        const result = await response.text();
+      } catch (mailError) {
+        console.log(mailError);
       }
-    } catch (err) {
-      showAlert("danger", "Error", err.message);
-    } finally {
-      setBusyId(null);
-      setRejectId(null);
-      setRejectRemark("");
     }
-  };
+
+    showAlert(
+      "success",
+      "Success",
+      status === 1
+        ? "File Approved Successfully"
+        : "File Rejected Successfully"
+    );
+
+    setRows((prev) => prev.filter((r) => r.id !== id));
+  } catch (err) {
+    showAlert("danger", "Error", err.message);
+  } finally {
+    setBusyId(null);
+    setRejectId(null);
+    setRejectRemark("");
+  }
+};
 
   if (!isAdmin) return null;
 
@@ -136,7 +201,11 @@ const PendingApprovals = () => {
                               <td>{r.upload_time || "-"}</td>
                               <td className="pe-5 text-end">
                                 <a
-                                  href={`${API_BASE}/${r.links}`}
+                                  href={
+                                    supabase.storage
+                                      .from("documents")
+                                      .getPublicUrl(r.links).data.publicUrl
+                                  }
                                   target="_blank"
                                   rel="noreferrer"
                                   className="btn btn-sm btn-icon btn-light-primary me-1"
