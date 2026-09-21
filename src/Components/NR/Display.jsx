@@ -525,10 +525,7 @@ export default function Display({ page }) {
         .from("datacollection")
         .select("*")
         .eq("status", 1)
-        .eq(
-          "menuname",
-          PAGE_CONFIG[page]?.title
-        );
+        .eq("menu_id", Number(sessionStorage.getItem("current_menu_id")));
 
 
 
