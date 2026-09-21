@@ -180,7 +180,8 @@ const UserProfiles = () => {
             const matchesRole =
                 roleFilter === "all" ||
                 (roleFilter === "admin" && userRole === "admin") ||
-                (roleFilter === "user" && userRole !== "admin");
+                (roleFilter === "subadmin" && userRole === "subadmin") ||
+                (roleFilter === "user" && userRole === "user");
 
             return matchesSearch && matchesRole;
         });
@@ -471,6 +472,9 @@ const UserProfiles = () => {
 
         if (currentRole === "admin") {
             return "badge-light-danger";
+        }
+        if (currentRole === "subadmin") {
+            return "badge-light-warning";
         }
 
         return "badge-light-success";
@@ -857,6 +861,7 @@ const UserProfiles = () => {
                                     >
                                         <option value="all">All</option>
                                         <option value="admin">Admin</option>
+                                        <option value="subadmin">SubAdmin</option>
                                         <option value="user">Users</option>
                                     </select>
                                 </div>
