@@ -698,7 +698,7 @@ const SidebarLayout = ({ children }) => {
                       {userDisplay}
                     </div>
                     <div className="text-muted fs-7">
-                      {isAdmin ? "Admin" : "User"}
+                      {isAdmin ? "Admin" : isSubAdmin ? "SubAdmin" : "User"}
                     </div>
                   </div>
                   <Link
@@ -764,7 +764,7 @@ const SidebarLayout = ({ children }) => {
                       <div className="fw-semibold text-dark">{userDisplay}</div>
 
                       <div className="text-muted fs-7">
-                        {isAdmin ? "Admin" : "User"}
+                        {isAdmin ? "Admin" : isSubAdmin ? "SubAdmin" : "User"}
                       </div>
                     </div>
 
