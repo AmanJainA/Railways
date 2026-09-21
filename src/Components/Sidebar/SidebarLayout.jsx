@@ -101,7 +101,7 @@ const SidebarLayout = ({ children }) => {
           Object.fromEntries(
             hs.map((h) => [
               h.id,
-              Number(h.id) === currentHeadingId || currentPath.startsWith("/nr"),
+              Number(h.id) === currentHeadingId,
             ])
           )
         );
@@ -563,7 +563,13 @@ const SidebarLayout = ({ children }) => {
                     <div className={`menu-item menu-accordion mb-1${isOpen ? " show" : ""}`} key={heading.id}>
                       <div
                         className={`menu-link${headingActive ? " active" : ""}`}
-                        onClick={() => setOpenHeadings((prev) => ({ ...prev, [heading.id]: !prev[heading.id] }))}
+                        onClick={() =>
+                          setOpenHeadings((prev) =>
+                            Object.fromEntries(
+                              headings.map((h) => [h.id, Number(h.id) === Number(heading.id) ? !prev[h.id] : false])
+                            )
+                          )
+                        }
                         style={{ cursor: "pointer" }}
                       >
                         <span className="menu-icon"><i className="ki-duotone ki-delivery fs-2"><span className="path1"></span><span className="path2"></span><span className="path3"></span><span className="path4"></span></i></span>
