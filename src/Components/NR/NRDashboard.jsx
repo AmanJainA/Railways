@@ -4,7 +4,7 @@ import "./NRDashboard.css";
 import { useNavigate } from "react-router-dom";
 import Footer from "../Footer/Footer";
 import { supabase } from "../../supabase";
-import { getAccessibleHeadings } from "../Utility/dataAccess";
+import { getAccessibleHeadings, getAccessibleMenus } from "../Utility/dataAccess";
 export default function NRDashboard() {
   const [currentHeadingId, setCurrentHeadingId] = useState(
     Number(sessionStorage.getItem("current_heading_id")) || null
@@ -700,27 +700,27 @@ export default function NRDashboard() {
                 </h3>
 
                 <span className="text-muted fs-7">
-                  Jump directly to any section
+                  Jump directly to any menu in this Main Heading
                 </span>
               </div>
 
               <div className="d-flex flex-wrap gap-3">
-                {Object.entries(categoryMap).map(([menuName, cat], i) => {
+{quickAccessMenus.map((menu, i) => {
+                  const cat = categoryMap[menu.menuname] || {
+                    color: ["primary", "success", "warning", "info", "danger"][i % 5],
+                    icon: "ki-folder",
+                  };
                   const menuItem = data.menuData.find(
-                    (m) => m.menuname === menuName,
+                    (m) => Number(m.id) === Number(menu.id),
                   );
-
                   const cnt = menuItem ? menuItem.total : 0;
 
                   return (
                     <button
-                      key={i}
-                      onClick={() =>
-                        navigate("/nr/display", {
-                          state: { menu: menuName },
-                        })
-                      }
+                      key={menu.id}
+                      onClick={() => navigateToMenu(menu)}
                       className="qa-pill"
+                      title={`${sessionStorage.getItem("current_heading_name") || "Main Heading"} → ${menu.menuname}`}
                     >
                       <i
                         className={`ki-duotone ${cat.icon} fs-6 text-${cat.color}`}
@@ -731,7 +731,7 @@ export default function NRDashboard() {
                         <span className="path4"></span>
                       </i>
 
-                      {menuName}
+                      {menu.menuname}
 
                       <span
                         className={`badge badge-light-${cat.color} ms-1 fs-9`}
