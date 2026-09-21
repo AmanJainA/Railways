@@ -1244,11 +1244,11 @@ const UserProfiles = () => {
                 >
 
                     <div
-                        className="modal-dialog modal-dialog-centered modal-lg"
+                        className="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable"
                         role="document"
                     >
 
-                        <div className="modal-content">
+                        <div className="modal-content" style={{ maxHeight: "calc(100vh - 2rem)" }}>
 
                             {/* MODAL HEADER */}
 
@@ -1278,7 +1278,7 @@ const UserProfiles = () => {
 
                             <form onSubmit={handleSubmit}>
 
-                                <div className="modal-body">
+                                <div className="modal-body" style={{ overflowX: "hidden" }}>
 
                                     <div className="row g-5">
 
@@ -1460,7 +1460,7 @@ const UserProfiles = () => {
                                                 })}
                                             </div>
                                             <div className="form-text">
-                                                Select the Main Heading first, then select the specific menus this user can access. Admins have access to all Main Headings and Menus.
+                                                Select the Main Heading first, then select the specific menus this user can access. Admins have access to all Main Headings and Menus. SubAdmins and Users are limited to their assigned Main Headings and menus.
                                             </div>
                                         </div>
 
