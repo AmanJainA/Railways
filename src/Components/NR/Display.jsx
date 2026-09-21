@@ -548,7 +548,7 @@ export default function Display({ page }) {
       else {
 
         rowsRef.current =
-          PAGE_CONFIG[page]?.title === "Reports"
+          sessionStorage.getItem("current_menu_name") === "Reports"
             ? sortReports(data || [])
             : data || [];
 
