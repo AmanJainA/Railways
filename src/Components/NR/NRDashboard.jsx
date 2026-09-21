@@ -28,6 +28,9 @@ export default function NRDashboard() {
     navigate("/nr/display");
   };
   const [quickAccessMenus, setQuickAccessMenus] = useState([]);
+  const isNRDataDashboard =
+    String(sessionStorage.getItem("current_heading_name") || "").trim().toLowerCase() ===
+    "nr data";
   const [data, setData] = useState({
     menuData: [],
     typeData: [],
