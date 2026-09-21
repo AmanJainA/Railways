@@ -6,9 +6,10 @@ import Footer from "../Footer/Footer";
 import { supabase } from "../../supabase";
 import { getAccessibleHeadings, getAccessibleMenus } from "../Utility/dataAccess";
 export default function NRDashboard() {
-  const [currentHeadingId, setCurrentHeadingId] = useState(
-    Number(sessionStorage.getItem("current_heading_id")) || null
-  );
+  const location = useLocation();
+  const [currentHeadingId, setCurrentHeadingId] = useState(null);
+  const [currentHeadingName, setCurrentHeadingName] = useState("");
+  const [isNRDataDashboard, setIsNRDataDashboard] = useState(false);
 
   const navigateToMenu = (menu) => {
     if (!menu) return;
@@ -57,15 +58,29 @@ export default function NRDashboard() {
           return;
         }
 
+        const queryHeadingId = Number(
+          new URLSearchParams(location.search).get("heading")
+        );
         const storedId = Number(sessionStorage.getItem("current_heading_id"));
         const selected =
-          headings.find((h) => Number(h.id) === storedId) || headings[0];
+          headings.find((h) => Number(h.id) === queryHeadingId) ||
+          headings.find((h) => Number(h.id) === storedId) ||
+          headings[0];
 
-        setCurrentHeadingId(Number(selected.id));
-        sessionStorage.setItem("current_heading_id", String(selected.id));
-        sessionStorage.setItem("current_heading_name", selected.headingname);
+        const selectedId = Number(selected.id);
+        const selectedName = String(selected.headingname || "");
 
-        await loadDashboard(Number(selected.id));
+        setCurrentHeadingId(selectedId);
+        setCurrentHeadingName(selectedName);
+        setIsNRDataDashboard(selectedName.trim().toLowerCase() === "nr data");
+
+        sessionStorage.setItem("current_heading_id", String(selectedId));
+        sessionStorage.setItem("current_heading_name", selectedName);
+        sessionStorage.removeItem("current_menu_id");
+        sessionStorage.removeItem("current_menu_name");
+        sessionStorage.setItem("current_page", "dashboard");
+
+        await loadDashboard(selectedId);
       } catch (err) {
         console.error(err);
       }
