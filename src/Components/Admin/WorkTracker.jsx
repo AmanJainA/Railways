@@ -413,125 +413,6 @@ export default function WorkTracker() {
           </div>
         )}
 
-        <div className="card shadow-sm mb-6">
-          <div className="card-header d-flex justify-content-between align-items-center">
-            <div>
-              <h3 className="card-title fw-bold mb-1">
-                <i className="ki-duotone ki-check-square fs-2 me-2 text-primary"><span className="path1"></span><span className="path2"></span></i>
-                Work Tracker / Todo
-              </h3>
-              <div className="text-muted fs-7">
-                Connect every piece of work to its Main Heading → Menu → Folder → Deliverables.
-              </div>
-            </div>
-            <button className="btn btn-light-primary" type="button" onClick={startNew}>
-              <i className="ki-duotone ki-plus fs-2"><span className="path1"></span><span className="path2"></span></i>
-              New Work
-            </button>
-          </div>
-
-          <div className="card-body">
-            <form onSubmit={save}>
-              <div className="row g-5">
-                <div className="col-md-4">
-                  <label className="form-label fw-bold required">Main Heading</label>
-                  <select className="form-select form-select-solid" value={form.main_heading_id} onChange={(e) => onHeadingChange(e.target.value)}>
-                    <option value="">Select Main Heading</option>
-                    {headings.map((h) => <option key={h.id} value={h.id}>{h.headingname}</option>)}
-                  </select>
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label fw-bold required">Menu</label>
-                  <select className="form-select form-select-solid" value={form.menu_id} onChange={(e) => onMenuChange(e.target.value)}>
-                    <option value="">Select Menu</option>
-                    {menus.map((m) => <option key={m.id} value={m.id}>{m.menuname}</option>)}
-                  </select>
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label fw-bold">Folder / Work Segment</label>
-                  <select className="form-select form-select-solid" value={form.folder_id} onChange={(e) => setForm({ ...form, folder_id: e.target.value, parent_id: "" })}>
-                    <option value="">No Folder</option>
-                    {folders.map((f) => <option key={f.id} value={f.id}>{f.foldername}</option>)}
-                  </select>
-                </div>
-
-                <div className="col-md-8">
-                  <label className="form-label fw-bold required">Work / Todo Title</label>
-                  <input className="form-control form-control-solid" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Assignment of IIIrd - Work / Study 1" />
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label fw-bold">Parent Work</label>
-                  <select className="form-select form-select-solid" value={form.parent_id} onChange={(e) => setForm({ ...form, parent_id: e.target.value })}>
-                    <option value="">Top-level Work</option>
-                    {formParentOptions.map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}
-                  </select>
-                </div>
-
-                <div className="col-md-4">
-                  <label className="form-label fw-bold">Work Type</label>
-                  <select className="form-select form-select-solid" value={form.work_type} onChange={(e) => setForm({ ...form, work_type: e.target.value })}>
-                    {WORK_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                  </select>
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label fw-bold">Status</label>
-                  <select className="form-select form-select-solid" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                    {Object.entries(STATUS).map(([value, x]) => <option key={value} value={value}>{x.label}</option>)}
-                  </select>
-                </div>
-                <div className="col-md-2">
-                  <label className="form-label fw-bold">Priority</label>
-                  <select className="form-select form-select-solid" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
-                    {Object.entries(PRIORITY).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                  </select>
-                </div>
-                <div className="col-md-2">
-                  <label className="form-label fw-bold">Due Date</label>
-                  <input type="date" className="form-control form-control-solid" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
-                </div>
-
-                <div className="col-12">
-                  <label className="form-label fw-bold">Description / What We Did</label>
-                  <textarea rows="3" className="form-control form-control-solid" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Explain the work completed, scope, key activity, or next step." />
-                </div>
-
-                <div className="col-12">
-                  <label className="form-label fw-bold">Connected Deliverables / Files</label>
-                  <div className="text-muted fs-7 mb-2">
-                    Select files from multiple accessible menus under this Main Heading. For example, one Work / Todo can contain a Report from Reports and a PPT from Meeting.
-                  </div>
-                  <select
-                    multiple
-                    className="form-select form-select-solid"
-                    style={{ minHeight: 150 }}
-                    value={form.linked_ids.map(String)}
-                    onChange={(e) => setForm({
-                      ...form,
-                      linked_ids: Array.from(e.target.selectedOptions).map((o) => Number(o.value)),
-                    })}
-                  >
-                    {formDocuments.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.menuname ? `[${d.menuname}] ` : ""}{d.name}{d.folder ? ` — ${d.folder}` : ""}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="form-text">
-                    Select one or multiple approved files. Use this for the report, PDF, PPT, data requirement letter, acceptance letter, format, presentation, etc.
-                  </div>
-                </div>
-              </div>
-
-              <div className="d-flex justify-content-end gap-3 mt-6">
-                {editingId && <button type="button" className="btn btn-light" onClick={resetForm}>Cancel Edit</button>}
-                <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? "Saving..." : editingId ? "Update Work" : "Save Work"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-
         <div className="card shadow-sm">
           <div className="card-header">
             <div className="w-100">
@@ -578,7 +459,7 @@ export default function WorkTracker() {
                       <th>Status</th>
                       <th>Priority</th>
                       <th>Connected Files</th>
-                      <th className="text-end pe-5">Action</th>
+                      
                     </tr>
                   </thead>
                   <tbody>
@@ -611,11 +492,7 @@ export default function WorkTracker() {
                             {!x.links?.length && <span className="text-muted">No files linked</span>}
                           </div>
                         </td>
-                        <td className="text-end pe-5 text-nowrap">
-                          <button className="btn btn-sm btn-light-primary me-2" onClick={() => editItem(x)}>Edit</button>
-                          <button className="btn btn-sm btn-light-danger" onClick={() => deleteItem(x)}>Delete</button>
-                        </td>
-                      </tr>
+                        </tr>
                     ))}
                   </tbody>
                 </table>
@@ -624,9 +501,7 @@ export default function WorkTracker() {
           </div>
         </div>
 
-        <div className="alert alert-light-primary mt-6">
-          <strong>How to use it:</strong> Create one top-level work item for the letter/meeting/assignment, then add child work items for each study, report, PPT, data requirement, acceptance letter, format or extra presentation. Link the actual uploaded deliverable(s) to each child item.
-        </div>
+
       </div>
     </div>
   );
