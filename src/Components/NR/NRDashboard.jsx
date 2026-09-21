@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import ApexCharts from "react-apexcharts";
 import "./NRDashboard.css";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Footer from "../Footer/Footer";
 import { supabase } from "../../supabase";
 import { getAccessibleHeadings, getAccessibleMenus } from "../Utility/dataAccess";
@@ -28,9 +28,6 @@ export default function NRDashboard() {
     navigate("/nr/display");
   };
   const [quickAccessMenus, setQuickAccessMenus] = useState([]);
-  const isNRDataDashboard =
-    String(sessionStorage.getItem("current_heading_name") || "").trim().toLowerCase() ===
-    "nr data";
   const [data, setData] = useState({
     menuData: [],
     typeData: [],
@@ -77,7 +74,7 @@ export default function NRDashboard() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [location.search]);
 
   async function loadDashboard(headingId) {
     try {
@@ -311,7 +308,7 @@ export default function NRDashboard() {
                 </div>
 
                 <h1 className="nr-hero-title">
-                  {(sessionStorage.getItem("current_heading_name") || "Data") + " Dashboard"}
+                  {(currentHeadingName || "Data") + " Dashboard"}
                 </h1>
 
                 {isNRDataDashboard && (
