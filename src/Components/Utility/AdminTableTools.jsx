@@ -177,10 +177,10 @@ export const AdminTableToolbar = ({
         {exportOpen && (
           <div className="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg-light-primary fw-semibold py-3 position-absolute end-0 mt-2 show" style={{ zIndex: 20, minWidth: 150 }}>
             {[
-              ["copy", "Copy"],
-              ["excel", "Excel"],
-              ["pdf", "PDF"],
-              ["word", "Word"],
+              ["copy", "Copy to clipboard"],
+              ["excel", "Export as Excel"],
+              ["pdf", "Export as PDF"],
+              ["word", "Export as Word"],
             ].map(([key, label]) => (
               <button key={key} type="button" className="menu-item px-5 py-2 border-0 bg-transparent text-start w-100" onClick={() => doExport(key)}>
                 {label}
