@@ -4,7 +4,7 @@ import "./NRDashboard.css";
 import { useLocation, useNavigate } from "react-router-dom";
 import Footer from "../Footer/Footer";
 import { supabase } from "../../supabase";
-import { getAccessibleHeadings, getAccessibleMenus } from "../Utility/dataAccess";
+import { getAccessibleHeadings, getAccessibleMenus, isAdminUser } from "../Utility/dataAccess";
 export default function NRDashboard() {
   const location = useLocation();
   const [currentHeadingId, setCurrentHeadingId] = useState(null);
