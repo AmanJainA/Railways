@@ -4,15 +4,12 @@ import "./Dashboard.css";
 import Footer from "../Footer/Footer";
 import { useNavigate } from "react-router-dom";
 import DashboardCard from "./DashboardCard";
+import { getAccessibleHeadings, setCurrentDataContext } from "../Utility/dataAccess";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [data, setData] = useState({
-    counts: {
-      mydata: 0,
-      nangia: 0,
-      nr: 0,
-    },
+    headingCounts: [],
     nrMenus: [],
     visitData: {},
     stats: {
@@ -24,6 +21,7 @@ const Dashboard = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
   const handleOpen = (menu) => {
     const slug = menu
       .trim()
@@ -41,34 +39,48 @@ const Dashboard = () => {
       .replace(/([a-z])([A-Z])/g, "$1 $2")
       .replace(/\b\w/g, (c) => c.toUpperCase());
   };
+
   const fetchData = async () => {
     try {
-      // Fetch all files
+      // Only show Main Headings available to the current user.
+      // Admins automatically receive all active Main Headings.
+      const headings = await getAccessibleHeadings();
+
       const { data: files, error } = await supabase
         .from("datacollection")
         .select("*");
 
       if (error) throw error;
 
+      const accessibleHeadingIds = new Set(
+        (headings || []).map((heading) => Number(heading.id))
+      );
+
+      // Dynamic file count for every Main Heading.
+      // The count is based on datacollection.main_heading_id.
+      const headingCounts = (headings || []).map((heading) => ({
+        id: Number(heading.id),
+        title: heading.headingname,
+        count: (files || []).filter(
+          (item) => Number(item.main_heading_id) === Number(heading.id)
+        ).length,
+      }));
+
       // -----------------------
-      // Dashboard Counts
-      // -----------------------
-
-      const myData = files.filter((item) => item.menuname === "mydata").length;
-
-      const nangia = files.filter((item) => item.menuname === "Nangia").length;
-
-      const nrData = files.length - myData - nangia;
-
-      // -----------------------
-      // Latest Folder
+      // Latest Folder / Menu
       // -----------------------
 
       const menuMap = {};
 
-      files.forEach((item) => {
-        const title = item.menuname?.trim();
+      (files || []).forEach((item) => {
+        if (
+          item.main_heading_id != null &&
+          !accessibleHeadingIds.has(Number(item.main_heading_id))
+        ) {
+          return;
+        }
 
+        const title = item.menuname?.trim();
         if (!title) return;
 
         const slug = title
@@ -95,7 +107,14 @@ const Dashboard = () => {
       // Visit Data
       // -----------------------
 
-      const visitFiles = files.filter((item) => {
+      const visitFiles = (files || []).filter((item) => {
+        if (
+          item.main_heading_id != null &&
+          !accessibleHeadingIds.has(Number(item.main_heading_id))
+        ) {
+          return false;
+        }
+
         const menu = item.menuname?.trim().toLowerCase();
 
         const isPdf =
@@ -120,24 +139,14 @@ const Dashboard = () => {
         }
       });
 
-      // -----------------------
-
       setData({
-        counts: {
-          mydata: myData,
-          nangia: nangia,
-          nr: nrData,
-        },
-
+        headingCounts,
         nrMenus,
-
         visitData,
-
         stats: {
           totalFolders: Object.values(visitData).filter(
             (x) => x.length > 0
           ).length,
-
           totalFiles: visitFiles.length,
         },
       });
@@ -145,6 +154,39 @@ const Dashboard = () => {
       console.error(err);
     }
   };
+
+  const handleHeadingOpen = (heading) => {
+    setCurrentDataContext(heading, null);
+    navigate("/nr");
+  };
+
+  const cardStyles = [
+    {
+      color: "primary",
+      bgColor: "bg-light-primary",
+      icon: "ki-folder",
+    },
+    {
+      color: "warning",
+      bgColor: "bg-light-warning",
+      icon: "ki-briefcase",
+    },
+    {
+      color: "success",
+      bgColor: "bg-light-success",
+      icon: "ki-folder",
+    },
+    {
+      color: "info",
+      bgColor: "bg-light-info",
+      icon: "ki-folder",
+    },
+    {
+      color: "danger",
+      bgColor: "bg-light-danger",
+      icon: "ki-folder",
+    },
+  ];
 
   return (
     <div
@@ -155,32 +197,30 @@ const Dashboard = () => {
         <div className="row gy-5 gx-xl-10">
           <div className="col-xl-12">
             <div className="row g-5 mb-8">
-              <DashboardCard
-                title="My Data"
-                count={data.counts?.mydata}
-                color="primary"
-                bgColor="bg-light-primary"
-                icon="ki-profile-user"
-              />
+              {data.headingCounts.map((heading, index) => {
+                const style = cardStyles[index % cardStyles.length];
 
-              <DashboardCard
-                title="Nangia"
-                count={data.counts?.nangia}
-                color="warning"
-                bgColor="bg-light-warning"
-                icon="ki-briefcase"
-              />
-
-              <DashboardCard
-                title="NR Data"
-                count={data.counts?.nr}
-                color="success"
-                bgColor="bg-light-success"
-                icon="ki-folder"
-              />
+                return (
+                  <div
+                    className="col-md-4"
+                    key={heading.id}
+                    role="button"
+                    onClick={() => handleHeadingOpen(heading)}
+                  >
+                    <DashboardCard
+                      title={heading.title}
+                      count={heading.count}
+                      color={style.color}
+                      bgColor={style.bgColor}
+                      icon={style.icon}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
+
         <div className="row gy-5 g-xl-10">
           <div className="col-xl-5 mb-xl-10">
             <div className="card card-flush h-lg-100">
@@ -244,6 +284,7 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
+
           <div className="col-xl-7 mb-5 mb-xl-10">
             <div className="row g-5 g-xl-10 h-xxl-50 mb-0 mb-xl-10">
               <div className="col-xxl-12 mb-5 mb-xl-0">
@@ -279,6 +320,7 @@ const Dashboard = () => {
                         <div className="fw-bold text-gray-700 mb-3 mt-4">
                           📁 {folder} Folder
                         </div>
+
                         {data.visitData[folder].map((file, j) => (
                           <div key={j}>
                             <div className="d-flex flex-stack mb-3">
@@ -303,6 +345,7 @@ const Dashboard = () => {
                                 </div>
                               </div>
                             </div>
+
                             <div className="separator separator-dashed my-2"></div>
                           </div>
                         ))}
@@ -315,6 +358,7 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
       <Footer />
     </div>
   );
