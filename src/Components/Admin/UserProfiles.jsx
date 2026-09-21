@@ -160,10 +160,6 @@ const UserProfiles = () => {
         (user) => (user.role || "").toLowerCase() === "user"
     ).length;
 
-    const subAdminUsers = users.filter(
-        (user) => (user.role || "").toLowerCase() === "subadmin"
-    ).length;
-
     // =========================================================
     // FILTER USERS
     // =========================================================
