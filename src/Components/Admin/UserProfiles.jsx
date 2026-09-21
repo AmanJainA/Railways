@@ -688,6 +688,17 @@ const UserProfiles = () => {
     // UI
     // =========================================================
 
+    useEffect(() => {
+        if (!showModal) return undefined;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [showModal]);
+
     return (
         <div className="d-flex flex-column flex-root">
             <div className="d-flex flex-column flex-column-fluid">
@@ -1235,20 +1246,40 @@ const UserProfiles = () => {
 
             {showModal && (
                 <div
-                    className="modal fade show d-block"
+                    className="modal fade show d-flex align-items-center justify-content-center"
                     tabIndex="-1"
                     role="dialog"
+                    aria-modal="true"
                     style={{
+                        position: "fixed",
+                        inset: 0,
+                        width: "100vw",
+                        height: "100vh",
+                        padding: "1rem",
                         backgroundColor: "rgba(0,0,0,0.45)",
+                        zIndex: 2000,
+                        overflow: "hidden",
                     }}
                 >
 
                     <div
-                        className="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable"
+                        className="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable w-100"
                         role="document"
+                        style={{
+                            margin: 0,
+                            maxWidth: "1140px",
+                            width: "100%",
+                            maxHeight: "calc(100vh - 2rem)",
+                        }}
                     >
 
-                        <div className="modal-content" style={{ maxHeight: "calc(100vh - 2rem)" }}>
+                        <div
+                            className="modal-content"
+                            style={{
+                                maxHeight: "calc(100vh - 2rem)",
+                                overflow: "hidden",
+                            }}
+                        >
 
                             {/* MODAL HEADER */}
 
@@ -1278,7 +1309,14 @@ const UserProfiles = () => {
 
                             <form onSubmit={handleSubmit}>
 
-                                <div className="modal-body" style={{ overflowX: "hidden" }}>
+                                <div
+                                    className="modal-body"
+                                    style={{
+                                        overflowX: "hidden",
+                                        overflowY: "auto",
+                                        WebkitOverflowScrolling: "touch",
+                                    }}
+                                >
 
                                     <div className="row g-5">
 
