@@ -452,7 +452,7 @@ export default function Display({ page }) {
       const { data, error } = await supabase
         .from("datacollection")
         .select("folder")
-        .eq("menuname", PAGE_CONFIG[page]?.title)
+        .eq("menu_id", Number(sessionStorage.getItem("current_menu_id")))
         .eq("status", 1)
         .not("folder", "is", null);
 
