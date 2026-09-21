@@ -122,7 +122,14 @@ const ManageMenu = () => {
         {alert && <div className={`alert alert-${alert.type} mb-5`}><h4>{alert.title}</h4><span>{alert.message}</span></div>}
 
         <div className="card shadow-sm mb-5">
-          <div className="card-header"><h3 className="card-title fw-bold">Manage Menu</h3></div>
+          <div className="card-header"><h3 className="card-title fw-bold">
+                <i className="ki-duotone ki-plus-square fs-2 me-2 text-primary">
+                  <span className="path1"></span>
+                  <span className="path2"></span>
+                </i>
+                Add New Menu
+              </h3>
+            </div>
           <div className="card-body">
             <form className="row g-4 align-items-end" onSubmit={add}>
               <div className="col-lg-4">
@@ -143,13 +150,18 @@ const ManageMenu = () => {
         </div>
 
         <div className="card shadow-sm">
-          <div className="card-header"><h3 className="card-title fw-bold mb-0">Menus</h3></div>
-          <AdminTableToolbar table={table} headers={["#", "Main Heading", "Menu Name", "Created By"]} getRows={exportRows} filename="Menus" />
+          <div className="card-header d-flex align-items-center justify-content-between">
+              <h3 className="card-title fw-bold mb-0">All Menus</h3>
+              <span className="badge badge-light-primary fs-7">
+                {rows.length} Total
+              </span>
+            </div>
+          <AdminTableToolbar table={table} headers={["#", "Main Heading", "Menu Name", "Created By", "Created Date"]} getRows={exportRows} filename="Menus" />
           <div className="card-body p-0">
             <div className="table-responsive">
               <table className="table table-row-dashed table-hover align-middle fs-7 mb-0">
                 <thead><tr className="text-muted fw-bold fs-8 text-uppercase bg-light">
-                  <th className="ps-5">#</th><th>Main Heading</th><th>Menu Name</th><th>Created By</th><th className="text-end pe-5">Action</th>
+                  <th className="ps-5">#</th><th>Main Heading</th><th>Menu Name</th><th>Created By</th><th>Created Date</th><th className="text-end pe-5">Action</th>
                 </tr></thead>
                 <tbody>
                   {table.visibleRows.map((r, i) => <tr key={r.id}>
@@ -163,6 +175,15 @@ const ManageMenu = () => {
                     </td>
                     <td>{editId === r.id ? <input className="form-control form-control-sm" value={editMenuName} onChange={(e) => setEditMenuName(e.target.value)} /> : <span className="fw-semibold">{r.menuname}</span>}</td>
                     <td>{r.created_by || "-"}</td>
+                    <td>{r.created_at
+                              ? new Date(r.created_at).toLocaleString("en-IN", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "-"}</td>
                     <td className="text-end pe-5">
                       {isAdmin && (editId === r.id ? <>
                         <button className="btn btn-sm btn-success me-1" onClick={() => save(r.id)} disabled={saving}>Save</button>
@@ -172,8 +193,17 @@ const ManageMenu = () => {
                         <button className="btn btn-sm btn-danger me-1" onClick={() => remove(r.id)} disabled={saving}>Yes</button>
                         <button className="btn btn-sm btn-light" onClick={() => setDeleteId(null)}>No</button>
                       </> : <>
-                        <button className="btn btn-sm btn-icon btn-light-primary me-1" onClick={() => startEdit(r)} title="Edit">✎</button>
-                        <button className="btn btn-sm btn-icon btn-light-danger" onClick={() => setDeleteId(r.id)} title="Delete">×</button>
+                        <button className="btn btn-sm btn-icon btn-light-primary me-1" onClick={() => startEdit(r)} title="Edit"><i className="ki-duotone ki-pencil fs-4">
+                                    <span className="path1"></span>
+                                    <span className="path2"></span>
+                                  </i></button>
+                        <button className="btn btn-sm btn-icon btn-light-danger" onClick={() => setDeleteId(r.id)} title="Delete"><i className="ki-duotone ki-trash fs-4">
+                                    <span className="path1"></span>
+                                    <span className="path2"></span>
+                                    <span className="path3"></span>
+                                    <span className="path4"></span>
+                                    <span className="path5"></span>
+                                  </i></button>
                       </>)}
                     </td>
                   </tr>)}

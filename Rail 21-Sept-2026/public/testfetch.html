@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<button onclick="load()">Fetch API</button>
+
+<script>
+function load() {
+    fetch("https://samrat.gt.tc/cors.php")
+  .then(r => r.json())
+  .then(console.log)
+  .catch(console.error);
+}
+</script>
+
+</body>
+</html>

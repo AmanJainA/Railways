@@ -91,7 +91,7 @@ const ManageMainHeading = () => {
 
         {isAdmin ? (
           <div className="card shadow-sm mb-5">
-            <div className="card-header"><h3 className="card-title fw-bold">Manage Main Heading</h3></div>
+            <div className="card-header"><h3 className="card-title fw-bold">Add Main Heading</h3></div>
             <div className="card-body">
               <form className="row g-3 align-items-end" onSubmit={add}>
                 <div className="col-lg-9">
@@ -110,7 +110,10 @@ const ManageMainHeading = () => {
         )}
 
         <div className="card shadow-sm">
-          <div className="card-header"><h3 className="card-title fw-bold mb-0">Main Headings</h3></div>
+          <div className="card-header d-flex align-items-center justify-content-between"><h3 className="card-title fw-bold mb-0">All Main Headings</h3>
+            <span className="badge badge-light-primary fs-7">
+              {rows.length} Total
+            </span></div>
           <AdminTableToolbar table={table} headers={["#", "Main Heading", "Created By", "Created"]} getRows={exportRows} filename="Main_Headings" />
           <div className="card-body p-0">
             <div className="table-responsive">
