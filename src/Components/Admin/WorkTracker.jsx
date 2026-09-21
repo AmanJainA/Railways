@@ -174,14 +174,21 @@ export default function WorkTracker() {
 
   const visibleItems = useMemo(() => {
     const allowedHeadingIds = new Set(headings.map((h) => Number(h.id)));
+    const allowedMenuIds = new Set(menus.map((m) => Number(m.id)));
+
     return items.filter((x) => {
       if (!allowedHeadingIds.has(Number(x.main_heading_id))) return false;
-      if (filterHeading !== "all" && Number(x.main_heading_id) !== Number(filterHeading)) return false;
-      if (filterMenu !== "all" && Number(x.menu_id) !== Number(filterMenu)) return false;
-      if (filterStatus !== "all" && x.status !== filterStatus) return false;
+
+      // Non-admin users are automatically restricted to their assigned
+      // Main Headings + Menu Access. Admins can use the filters below.
+      if (!admin && !allowedMenuIds.has(Number(x.menu_id))) return false;
+
+      if (admin && filterHeading !== "all" && Number(x.main_heading_id) !== Number(filterHeading)) return false;
+      if (admin && filterMenu !== "all" && Number(x.menu_id) !== Number(filterMenu)) return false;
+      if (admin && filterStatus !== "all" && x.status !== filterStatus) return false;
       return true;
     });
-  }, [items, headings, filterHeading, filterMenu, filterStatus]);
+  }, [items, headings, menus, filterHeading, filterMenu, filterStatus, admin]);
 
   const headingName = (id) =>
     headings.find((x) => Number(x.id) === Number(id))?.headingname || `Heading #${id}`;
@@ -421,20 +428,22 @@ export default function WorkTracker() {
                   <h3 className="card-title fw-bold mb-1">Connected Work Register</h3>
                   <div className="text-muted fs-7">Use the hierarchy to understand exactly what was done and which deliverables belong to it.</div>
                 </div>
-                <div className="d-flex flex-wrap gap-2">
-                  <select className="form-select form-select-sm" value={filterHeading} onChange={(e) => { setFilterHeading(e.target.value); setFilterMenu("all"); }}>
-                    <option value="all">All Main Headings</option>
-                    {headings.map((h) => <option key={h.id} value={h.id}>{h.headingname}</option>)}
-                  </select>
-                  <select className="form-select form-select-sm" value={filterMenu} onChange={(e) => setFilterMenu(e.target.value)}>
-                    <option value="all">All Menus</option>
-                    {filteredMenus.map((m) => <option key={m.id} value={m.id}>{m.menuname}</option>)}
-                  </select>
-                  <select className="form-select form-select-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                    <option value="all">All Status</option>
-                    {Object.entries(STATUS).map(([v, x]) => <option key={v} value={v}>{x.label}</option>)}
-                  </select>
-                </div>
+                {admin && (
+                  <div className="d-flex flex-wrap gap-2">
+                    <select className="form-select form-select-sm" value={filterHeading} onChange={(e) => { setFilterHeading(e.target.value); setFilterMenu("all"); }}>
+                      <option value="all">All Main Headings</option>
+                      {headings.map((h) => <option key={h.id} value={h.id}>{h.headingname}</option>)}
+                    </select>
+                    <select className="form-select form-select-sm" value={filterMenu} onChange={(e) => setFilterMenu(e.target.value)}>
+                      <option value="all">All Menus</option>
+                      {filteredMenus.map((m) => <option key={m.id} value={m.id}>{m.menuname}</option>)}
+                    </select>
+                    <select className="form-select form-select-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                      <option value="all">All Status</option>
+                      {Object.entries(STATUS).map(([v, x]) => <option key={v} value={v}>{x.label}</option>)}
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
           </div>
