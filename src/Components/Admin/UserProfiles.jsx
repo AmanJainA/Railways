@@ -31,8 +31,11 @@ const UserProfiles = () => {
 
     // Form
     const [headings, setHeadings] = useState([]);
+    const [menus, setMenus] = useState([]);
     const [selectedHeadingIds, setSelectedHeadingIds] = useState([]);
+    const [selectedMenuIds, setSelectedMenuIds] = useState([]);
     const [userHeadingMap, setUserHeadingMap] = useState({});
+    const [userMenuMap, setUserMenuMap] = useState({});
 
     const [form, setForm] = useState({
         username: "",
@@ -60,6 +63,16 @@ const UserProfiles = () => {
             .order("id", { ascending: true });
         if (error) console.error("Heading fetch error:", error);
         else setHeadings(data || []);
+
+        const { data: menuData, error: menuError } = await supabase
+            .from("menu_master")
+            .select("id,menuname,main_heading_id")
+            .eq("status", "1")
+            .order("main_heading_id", { ascending: true })
+            .order("id", { ascending: true });
+
+        if (menuError) console.error("Menu fetch error:", menuError);
+        else setMenus(menuData || []);
     };
 
     const fetchUsers = async () => {
@@ -94,6 +107,24 @@ const UserProfiles = () => {
                 if (name) map[row.user_id].push(name);
             });
             setUserHeadingMap(map);
+        }
+
+        const { data: menuAccessRows, error: menuAccessError } = await supabase
+            .from("user_menu_access")
+            .select("user_id, menu_id, menu_master(menuname)")
+            .order("menu_id", { ascending: true });
+
+        if (menuAccessError) {
+            console.error("User menu access fetch error:", menuAccessError);
+            setUserMenuMap({});
+        } else {
+            const menuMap = {};
+            (menuAccessRows || []).forEach((row) => {
+                if (!menuMap[row.user_id]) menuMap[row.user_id] = [];
+                const name = row.menu_master?.menuname;
+                if (name) menuMap[row.user_id].push(name);
+            });
+            setUserMenuMap(menuMap);
         }
 
         setLoading(false);
@@ -196,6 +227,13 @@ const UserProfiles = () => {
             .select("main_heading_id")
             .eq("user_id", user.id);
         setSelectedHeadingIds((access || []).map(x => Number(x.main_heading_id)));
+
+        const { data: menuAccess } = await supabase
+            .from("user_menu_access")
+            .select("menu_id")
+            .eq("user_id", user.id);
+        setSelectedMenuIds((menuAccess || []).map(x => Number(x.menu_id)));
+
         setShowModal(true);
     };
 
@@ -218,6 +256,7 @@ const UserProfiles = () => {
             project: "",
         });
         setSelectedHeadingIds([]);
+        setSelectedMenuIds([]);
     };
 
     // =========================================================
@@ -308,6 +347,9 @@ const UserProfiles = () => {
                     if (selectedHeadingIds.length) {
                         await supabase.from("user_main_heading_access").insert(selectedHeadingIds.map(id => ({ user_id: newUser.id, main_heading_id: Number(id), created_by: username })));
                     }
+                    if (selectedMenuIds.length) {
+                        await supabase.from("user_menu_access").insert(selectedMenuIds.map(id => ({ user_id: newUser.id, menu_id: Number(id), created_by: username })));
+                    }
                 }
 
                 showAlert(
@@ -350,6 +392,12 @@ const UserProfiles = () => {
                 if (selectedHeadingIds.length) {
                     const { error: accessError } = await supabase.from("user_main_heading_access").insert(selectedHeadingIds.map(id => ({ user_id: editId, main_heading_id: Number(id), created_by: username })));
                     if (accessError) throw accessError;
+                }
+
+                await supabase.from("user_menu_access").delete().eq("user_id", editId);
+                if (selectedMenuIds.length) {
+                    const { error: menuAccessError } = await supabase.from("user_menu_access").insert(selectedMenuIds.map(id => ({ user_id: editId, menu_id: Number(id), created_by: username })));
+                    if (menuAccessError) throw menuAccessError;
                 }
 
                 showAlert(
@@ -929,8 +977,12 @@ const UserProfiles = () => {
                                                 Department
                                             </th>
 
-                                            <th className="min-w-120px">
-                                                Project
+                                            <th className="min-w-180px">
+                                                Main Heading Access
+                                            </th>
+
+                                            <th className="min-w-220px">
+                                                Menu Access
                                             </th>
 
                                             <th className="text-end min-w-150px">
@@ -946,7 +998,7 @@ const UserProfiles = () => {
                                         {loading ? (
                                             <tr>
                                                 <td
-                                                    colSpan="7"
+                                                    colSpan="8"
                                                     className="text-center py-15"
                                                 >
                                                     <span className="spinner-border spinner-border-sm text-primary me-2"></span>
@@ -1041,30 +1093,17 @@ const UserProfiles = () => {
                                                     </td>
 
                                                     {/* MAIN HEADING ACCESS */}
-                                        <div className="col-12">
-                                            <label className="form-label fw-bold">Main Heading Access</label>
-                                            <div className="border rounded p-4 bg-light">
-                                                {headings.length === 0 ? (
-                                                    <span className="text-muted">No Main Headings available. Create them from Manage Main Heading.</span>
-                                                ) : headings.map((heading) => (
-                                                    <label key={heading.id} className="d-flex align-items-center mb-3">
-                                                        <input
-                                                            type="checkbox"
-                                                            className="form-check-input me-3"
-                                                            checked={selectedHeadingIds.includes(Number(heading.id))}
-                                                            onChange={(e) => setSelectedHeadingIds((prev) => e.target.checked ? [...new Set([...prev, Number(heading.id)])] : prev.filter(id => id !== Number(heading.id)))}
-                                                        />
-                                                        <span className="fw-semibold">{heading.headingname}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                            <div className="form-text">Users can see only the selected Main Headings and all menus/folders inside those headings. Admins always see everything.</div>
-                                        </div>
-
-                                        {/* PROJECT */}
-
                                                     <td>
-                                                        {(userHeadingMap[user.id]?.length ? userHeadingMap[user.id].join(", ") : ((user.role || "").toLowerCase() === "admin" ? "All Main Headings" : (user.project || "-")))}
+                                                        {userHeadingMap[user.id]?.length
+                                                            ? userHeadingMap[user.id].join(", ")
+                                                            : ((user.role || "").toLowerCase() === "admin" ? "All Main Headings" : "-")}
+                                                    </td>
+
+                                                    {/* MENU ACCESS */}
+                                                    <td>
+                                                        {userMenuMap[user.id]?.length
+                                                            ? userMenuMap[user.id].join(", ")
+                                                            : ((user.role || "").toLowerCase() === "admin" ? "All Menus" : "-")}
                                                     </td>
 
                                                     {/* ACTION */}
@@ -1352,16 +1391,83 @@ const UserProfiles = () => {
 
                                         </div>
 
+                                        {/* MAIN HEADING + MENU ACCESS */}
+                                        <div className="col-12">
+                                            <label className="form-label fw-bold">Main Heading & Menu Access</label>
+                                            <div className="border rounded p-4 bg-light">
+                                                {headings.length === 0 ? (
+                                                    <span className="text-muted">No Main Headings available. Create them from Manage Main Heading.</span>
+                                                ) : headings.map((heading) => {
+                                                    const headingId = Number(heading.id);
+                                                    const headingMenus = menus.filter((menu) => Number(menu.main_heading_id) === headingId);
+                                                    const headingSelected = selectedHeadingIds.includes(headingId);
+
+                                                    return (
+                                                        <div key={heading.id} className="mb-5">
+                                                            <label className="d-flex align-items-center mb-3">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="form-check-input me-3"
+                                                                    checked={headingSelected}
+                                                                    onChange={(e) => {
+                                                                        setSelectedHeadingIds((prev) =>
+                                                                            e.target.checked
+                                                                                ? [...new Set([...prev, headingId])]
+                                                                                : prev.filter((id) => id !== headingId)
+                                                                        );
+                                                                        if (!e.target.checked) {
+                                                                            setSelectedMenuIds((prev) =>
+                                                                                prev.filter((menuId) =>
+                                                                                    !headingMenus.some((menu) => Number(menu.id) === Number(menuId))
+                                                                                )
+                                                                            );
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <span className="fw-bold">{heading.headingname}</span>
+                                                            </label>
+
+                                                            <div className="ms-8">
+                                                                {headingMenus.length === 0 ? (
+                                                                    <div className="text-muted fs-7">No menus under this Main Heading.</div>
+                                                                ) : headingMenus.map((menu) => (
+                                                                    <label key={menu.id} className="d-flex align-items-center mb-2">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            className="form-check-input me-3"
+                                                                            disabled={!headingSelected}
+                                                                            checked={selectedMenuIds.includes(Number(menu.id))}
+                                                                            onChange={(e) =>
+                                                                                setSelectedMenuIds((prev) =>
+                                                                                    e.target.checked
+                                                                                        ? [...new Set([...prev, Number(menu.id)])]
+                                                                                        : prev.filter((id) => id !== Number(menu.id))
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                        <span>{menu.menuname}</span>
+                                                                    </label>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            <div className="form-text">
+                                                Select the Main Heading first, then select the specific menus this user can access. Admins have access to all Main Headings and Menus.
+                                            </div>
+                                        </div>
+
                                         {/* PROJECT / MAIN HEADING */}
 
                                         <div className="col-md-6">
-                                            <label className="form-label fw-bold">Project / Main Heading</label>
+                                            <label className="form-label fw-bold">Project / Main Heading Access</label>
                                             <div className="form-control form-control-solid bg-light">
                                                 {selectedHeadingIds.length
                                                     ? headings.filter((h) => selectedHeadingIds.includes(Number(h.id))).map((h) => h.headingname).join(", ")
                                                     : (form.role.toLowerCase() === "admin" ? "All Main Headings" : "Select Main Heading Access above")}
                                             </div>
-                                            <div className="form-text">Project is automatically represented by the user's assigned Main Headings.</div>
+                                            <div className="form-text">Project is automatically stored as the user's assigned Main Heading name(s). Menu permissions are stored separately.</div>
                                         </div>
 
                                     </div>
