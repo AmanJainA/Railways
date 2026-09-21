@@ -5,6 +5,7 @@ import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import Footer from "../Footer/Footer";
 import { supabase } from "../../supabase";
+import { getAccessibleHeadings, getAccessibleMenus } from "../Utility/dataAccess";
 window.JSZip = JSZip;
 if (pdfFonts && pdfFonts.pdfMake) {
   pdfMake.vfs = pdfFonts.pdfMake.vfs;
@@ -583,25 +584,57 @@ export default function Display({ page }) {
   useEffect(() => {
     if (!page) return;
 
-    // New token for this effect run. Any pending fetch from a previous
-    // page that resolves after this point will see a mismatched token
-    // and bail out before touching refs or the DOM.
     requestTokenRef.current += 1;
     const token = requestTokenRef.current;
+    let cancelled = false;
 
-    const hf = getHF();
-    const savedTab = sessionStorage.getItem("activeTab_" + page) || "all";
-    activeFolderRef.current = savedTab;
+    const initializePage = async () => {
+      try {
+        const headingId = Number(sessionStorage.getItem("current_heading_id"));
+        const menuId = Number(sessionStorage.getItem("current_menu_id"));
 
-    const tabWrapper = folderTabsRef.current?.parentElement;
-    if (tabWrapper) tabWrapper.style.display = hf ? "" : "none";
+        const accessibleHeadings = await getAccessibleHeadings();
+        const headingAllowed = accessibleHeadings.some(
+          (heading) => Number(heading.id) === headingId
+        );
 
-    if (hf) {
-      renderFolderTabs([], savedTab, token);
-      fetchFolders(token);
-    }
+        if (!headingAllowed) {
+          window.location.href = "/Railways/nr";
+          return;
+        }
 
-    fetchData(savedTab, token);
+        const accessibleMenus = await getAccessibleMenus(headingId);
+        const menuAllowed = accessibleMenus.some(
+          (menu) => Number(menu.id) === menuId
+        );
+
+        if (!menuAllowed) {
+          window.location.href = "/Railways/nr";
+          return;
+        }
+
+        if (cancelled || requestTokenRef.current !== token) return;
+
+        const hf = getHF();
+        const savedTab = sessionStorage.getItem("activeTab_" + page) || "all";
+        activeFolderRef.current = savedTab;
+
+        const tabWrapper = folderTabsRef.current?.parentElement;
+        if (tabWrapper) tabWrapper.style.display = hf ? "" : "none";
+
+        if (hf) {
+          renderFolderTabs([], savedTab, token);
+          fetchFolders(token);
+        }
+
+        fetchData(savedTab, token);
+      } catch (error) {
+        console.error("Access verification error:", error);
+        if (!cancelled) window.location.href = "/Railways/nr";
+      }
+    };
+
+    initializePage();
 
     const onOutside = (e) => {
       const toolbar = wrapperRef.current?.querySelector(".card-toolbar");
@@ -610,14 +643,11 @@ export default function Display({ page }) {
     document.addEventListener("click", onOutside);
 
     return () => {
-
-  // Invalidate any pending async request
-  requestTokenRef.current += 1;
-
-  document.removeEventListener("click", onOutside);
-
-  destroyDT();
-};
+      cancelled = true;
+      requestTokenRef.current += 1;
+      document.removeEventListener("click", onOutside);
+      destroyDT();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
