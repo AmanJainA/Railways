@@ -79,6 +79,8 @@ const SidebarLayout = ({ children }) => {
   const email = sessionStorage.getItem("email");
 
   const isAdmin = role.toLowerCase() === "admin";
+  const isSubAdmin = role.toLowerCase() === "subadmin";
+  const canApprove = isAdmin || isSubAdmin;
 
   const userInitial = user.charAt(0).toUpperCase();
 
@@ -454,7 +456,7 @@ const SidebarLayout = ({ children }) => {
                       </Link>
                     </div>
 
-                    {isAdmin && (
+                    {(isAdmin || isSubAdmin) && (
                       <div className="menu-item">
                         <Link className={`menu-link${currentPath === "/managemainheading" ? " active" : ""}`} to="/managemainheading">
                           <span className="menu-icon"><i className="ki-duotone ki-category fs-2"><span className="path1"></span><span className="path2"></span></i></span>
@@ -551,6 +553,22 @@ const SidebarLayout = ({ children }) => {
                       </div>
                     )}
                   </div>
+                </div>
+
+                {/* Work / Todo - read-only register for all roles */}
+                <div className="menu-item">
+                  <Link
+                    className={`menu-link${currentPath === "/worktracker" ? " active" : ""}`}
+                    to="/worktracker"
+                  >
+                    <span className="menu-icon">
+                      <i className="ki-duotone ki-check-square fs-2">
+                        <span className="path1"></span>
+                        <span className="path2"></span>
+                      </i>
+                    </span>
+                    <span className="menu-title">Work / Todo</span>
+                  </Link>
                 </div>
 
                 {/* Dynamic Main Heading navigation */}
