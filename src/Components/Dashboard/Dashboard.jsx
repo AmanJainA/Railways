@@ -56,15 +56,60 @@ const Dashboard = () => {
         (headings || []).map((heading) => Number(heading.id))
       );
 
-      // Dynamic file count for every Main Heading.
-      // The count is based on datacollection.main_heading_id.
-      const headingCounts = (headings || []).map((heading) => ({
-        id: Number(heading.id),
-        title: heading.headingname,
-        count: (files || []).filter(
-          (item) => Number(item.main_heading_id) === Number(heading.id)
-        ).length,
-      }));
+      // Dashboard layout:
+      // 1) My Data - fixed card
+      // 2) Nangia - fixed card
+      // 3) Every other active Main Heading - dynamic cards
+      //
+      // My Data remains compatible with the existing data structure and is
+      // counted from the "mydata" menu. Nangia and all other Main Headings
+      // are counted using datacollection.main_heading_id.
+      const myDataCount = (files || []).filter(
+        (item) => item.menuname?.trim().toLowerCase() === "mydata"
+      ).length;
+
+      const nangiaHeading = (headings || []).find(
+        (heading) => heading.headingname?.trim().toLowerCase() === "nangia"
+      );
+
+      const nangiaCount = nangiaHeading
+        ? (files || []).filter(
+            (item) =>
+              Number(item.main_heading_id) === Number(nangiaHeading.id)
+          ).length
+        : (files || []).filter(
+            (item) => item.menuname?.trim().toLowerCase() === "nangia"
+          ).length;
+
+      const dynamicHeadingCounts = (headings || [])
+        .filter(
+          (heading) => heading.headingname?.trim().toLowerCase() !== "nangia"
+        )
+        .map((heading) => ({
+          id: Number(heading.id),
+          title: heading.headingname,
+          count: (files || []).filter(
+            (item) => Number(item.main_heading_id) === Number(heading.id)
+          ).length,
+        }));
+
+      const headingCounts = [
+        {
+          id: "my-data",
+          title: "My Data",
+          count: myDataCount,
+          fixed: true,
+          page: "mydata",
+        },
+        {
+          id: nangiaHeading ? Number(nangiaHeading.id) : "nangia",
+          title: "Nangia",
+          count: nangiaCount,
+          fixed: true,
+          heading: nangiaHeading || null,
+        },
+        ...dynamicHeadingCounts,
+      ];
 
       // -----------------------
       // Latest Folder / Menu
@@ -156,7 +201,22 @@ const Dashboard = () => {
   };
 
   const handleHeadingOpen = (heading) => {
-    setCurrentDataContext(heading, null);
+    if (heading.page) {
+      sessionStorage.setItem("current_page", heading.page);
+      sessionStorage.removeItem("current_heading_id");
+      sessionStorage.removeItem("current_heading_name");
+      sessionStorage.removeItem("current_menu_id");
+      sessionStorage.removeItem("current_menu_name");
+      navigate("/nr/display");
+      return;
+    }
+
+    if (heading.heading) {
+      setCurrentDataContext(heading.heading, null);
+    } else {
+      setCurrentDataContext(heading, null);
+    }
+
     navigate("/nr");
   };
 
