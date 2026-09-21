@@ -68,6 +68,9 @@ const SidebarLayout = ({ children }) => {
 
   const [openNR, setOpenNR] = useState(isNrActive);
   const [openFiles, setOpenFiles] = useState(isFileMgmtActive);
+  const [headings, setHeadings] = useState([]);
+  const [headingMenus, setHeadingMenus] = useState({});
+  const [openHeadings, setOpenHeadings] = useState({});
 
   const user = (sessionStorage.getItem("user") || "User").trim();
 
