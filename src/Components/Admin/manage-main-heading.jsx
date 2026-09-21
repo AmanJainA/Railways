@@ -126,7 +126,16 @@ const ManageMainHeading = () => {
                     <td className="ps-5">{(table.page - 1) * table.pageSize + i + 1}</td>
                     <td>{editId === r.id ? <input className="form-control form-control-sm" value={editValue} onChange={(e) => setEditValue(e.target.value)} autoFocus /> : <span className="badge badge-light-primary fw-semibold">{r.headingname}</span>}</td>
                     <td>{r.created_by || "-"}</td>
-                    <td>{r.created_at ? new Date(r.created_at).toLocaleString("en-IN") : "-"}</td>
+                    <td>{r.created_at
+                              ? new Date(r.created_at).toLocaleString("en-IN", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "-"}
+                    </td>
                     {isAdmin && <td className="text-end pe-5">
                       {editId === r.id ? <>
                         <button className="btn btn-sm btn-success me-1" onClick={() => save(r.id)} disabled={saving}>Save</button>
@@ -136,8 +145,17 @@ const ManageMainHeading = () => {
                         <button className="btn btn-sm btn-danger me-1" onClick={() => remove(r.id)} disabled={saving}>Yes</button>
                         <button className="btn btn-sm btn-light" onClick={() => setDeleteId(null)}>No</button>
                       </> : <>
-                        <button className="btn btn-sm btn-icon btn-light-primary me-1" onClick={() => { setEditId(r.id); setEditValue(r.headingname || ""); }} title="Edit">✎</button>
-                        <button className="btn btn-sm btn-icon btn-light-danger" onClick={() => setDeleteId(r.id)} title="Delete">×</button>
+                        <button className="btn btn-sm btn-icon btn-light-primary me-1" onClick={() => { setEditId(r.id); setEditValue(r.headingname || ""); }} title="Edit"><i className="ki-duotone ki-pencil fs-4">
+                                    <span className="path1"></span>
+                                    <span className="path2"></span>
+                                  </i></button>
+                        <button className="btn btn-sm btn-icon btn-light-danger" onClick={() => setDeleteId(r.id)} title="Delete"><i className="ki-duotone ki-trash fs-4">
+                                    <span className="path1"></span>
+                                    <span className="path2"></span>
+                                    <span className="path3"></span>
+                                    <span className="path4"></span>
+                                    <span className="path5"></span>
+                                  </i></button>
                       </>}
                     </td>}
                   </tr>)}
