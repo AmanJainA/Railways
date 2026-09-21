@@ -30,6 +30,9 @@ const UserProfiles = () => {
     const [showExportMenu, setShowExportMenu] = useState(false);
 
     // Form
+    const [headings, setHeadings] = useState([]);
+    const [selectedHeadingIds, setSelectedHeadingIds] = useState([]);
+
     const [form, setForm] = useState({
         username: "",
         password: "",
@@ -45,7 +48,18 @@ const UserProfiles = () => {
 
     useEffect(() => {
         fetchUsers();
+        fetchHeadings();
     }, []);
+
+    const fetchHeadings = async () => {
+        const { data, error } = await supabase
+            .from("main_heading_master")
+            .select("id,headingname")
+            .eq("status", "1")
+            .order("id", { ascending: true });
+        if (error) console.error("Heading fetch error:", error);
+        else setHeadings(data || []);
+    };
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -137,6 +151,7 @@ const UserProfiles = () => {
             dept: "",
             project: "",
         });
+        setSelectedHeadingIds([]);
 
         setShowModal(true);
     };
@@ -145,7 +160,7 @@ const UserProfiles = () => {
     // OPEN EDIT MODAL
     // =========================================================
 
-    const openEditModal = (user) => {
+    const openEditModal = async (user) => {
         setEditId(user.id);
 
         setForm({
@@ -157,6 +172,11 @@ const UserProfiles = () => {
             project: user.project || "",
         });
 
+        const { data: access } = await supabase
+            .from("user_main_heading_access")
+            .select("main_heading_id")
+            .eq("user_id", user.id);
+        setSelectedHeadingIds((access || []).map(x => Number(x.main_heading_id)));
         setShowModal(true);
     };
 
@@ -178,6 +198,7 @@ const UserProfiles = () => {
             dept: "",
             project: "",
         });
+        setSelectedHeadingIds([]);
     };
 
     // =========================================================
@@ -260,6 +281,14 @@ const UserProfiles = () => {
                     throw error;
                 }
 
+                const { data: newUser } = await supabase.from("users").select("id").eq("username", form.username.trim()).maybeSingle();
+                if (newUser) {
+                    await supabase.from("user_main_heading_access").delete().eq("user_id", newUser.id);
+                    if (selectedHeadingIds.length) {
+                        await supabase.from("user_main_heading_access").insert(selectedHeadingIds.map(id => ({ user_id: newUser.id, main_heading_id: Number(id), created_by: username })));
+                    }
+                }
+
                 showAlert(
                     "success",
                     "Success",
@@ -292,6 +321,12 @@ const UserProfiles = () => {
 
                 if (error) {
                     throw error;
+                }
+
+                await supabase.from("user_main_heading_access").delete().eq("user_id", editId);
+                if (selectedHeadingIds.length) {
+                    const { error: accessError } = await supabase.from("user_main_heading_access").insert(selectedHeadingIds.map(id => ({ user_id: editId, main_heading_id: Number(id), created_by: username })));
+                    if (accessError) throw accessError;
                 }
 
                 showAlert(
@@ -982,7 +1017,28 @@ const UserProfiles = () => {
                                                         {user.dept || "-"}
                                                     </td>
 
-                                                    {/* PROJECT */}
+                                                    {/* MAIN HEADING ACCESS */}
+                                        <div className="col-12">
+                                            <label className="form-label fw-bold">Main Heading Access</label>
+                                            <div className="border rounded p-4 bg-light">
+                                                {headings.length === 0 ? (
+                                                    <span className="text-muted">No Main Headings available. Create them from Manage Main Heading.</span>
+                                                ) : headings.map((heading) => (
+                                                    <label key={heading.id} className="d-flex align-items-center mb-3">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="form-check-input me-3"
+                                                            checked={selectedHeadingIds.includes(Number(heading.id))}
+                                                            onChange={(e) => setSelectedHeadingIds((prev) => e.target.checked ? [...new Set([...prev, Number(heading.id)])] : prev.filter(id => id !== Number(heading.id)))}
+                                                        />
+                                                        <span className="fw-semibold">{heading.headingname}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                            <div className="form-text">Users can see only the selected Main Headings and all menus/folders inside those headings. Admins always see everything.</div>
+                                        </div>
+
+                                        {/* PROJECT */}
 
                                                     <td>
                                                         {user.project || "-"}
