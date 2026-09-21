@@ -535,8 +535,8 @@ const SidebarLayout = ({ children }) => {
                       </div>
                     )}
 
-                    {/* Pending Approvals - ADMIN ONLY */}
-                    {isAdmin && (
+                    {/* Pending Approvals - ADMIN + SUBADMIN */}
+                    {(isAdmin || isSubAdmin) && (
                       <div className="menu-item">
                         <Link
                           className={`menu-link${currentPath === "/pendingapprovals" ? " active" : ""}`}
