@@ -13,7 +13,6 @@ const ManageMenu = () => {
   const [editId, setEditId] = useState(null);
   const [editHeadingId, setEditHeadingId] = useState("");
   const [editMenuName, setEditMenuName] = useState("");
-  const [editMenus, setEditMenus] = useState([]);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [alert, setAlert] = useState(null);
@@ -84,7 +83,7 @@ const ManageMenu = () => {
     setEditHeadingId(String(row.main_heading_id));
     setEditMenuName(row.menuname || "");
     try {
-      setEditMenus(await getAccessibleMenus(row.main_heading_id));
+      await getAccessibleMenus(row.main_heading_id);
     } catch (e) {
       showAlert("danger", "Error", e.message);
     }
@@ -93,7 +92,7 @@ const ManageMenu = () => {
   const changeEditHeading = async (value) => {
     setEditHeadingId(value);
     setEditMenuName("");
-    try { setEditMenus(await getAccessibleMenus(value)); } catch (e) { showAlert("danger", "Error", e.message); }
+    try { await getAccessibleMenus(value); } catch (e) { showAlert("danger", "Error", e.message); }
   };
 
   const save = async (id) => {
