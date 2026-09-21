@@ -453,6 +453,7 @@ export default function Display({ page }) {
       const { data, error } = await supabase
         .from("datacollection")
         .select("folder")
+        .eq("main_heading_id", Number(sessionStorage.getItem("current_heading_id")))
         .eq("menu_id", Number(sessionStorage.getItem("current_menu_id")))
         .eq("status", 1)
         .not("folder", "is", null);
