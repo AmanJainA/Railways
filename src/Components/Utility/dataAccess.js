@@ -1,7 +1,12 @@
 import { supabase } from "../../supabase";
 
-export const isAdminUser = () =>
-  (sessionStorage.getItem("role") || "").toLowerCase() === "admin";
+export const getCurrentRole = () =>
+  (sessionStorage.getItem("role") || "user").trim().toLowerCase();
+
+export const isAdminUser = () => getCurrentRole() === "admin";
+export const isSubAdminUser = () => getCurrentRole() === "subadmin";
+export const canManageHeadings = () => isAdminUser();
+export const canAccessHeadingManagement = () => isAdminUser() || isSubAdminUser();
 
 export const getCurrentUserId = () => {
   const value = sessionStorage.getItem("user_id");
