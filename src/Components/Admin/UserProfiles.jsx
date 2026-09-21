@@ -1263,12 +1263,13 @@ const UserProfiles = () => {
                 >
 
                     <div
-                        className="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable w-100"
+                        className="modal-dialog modal-dialog-centered modal-xl w-100"
                         role="document"
                         style={{
                             margin: 0,
                             maxWidth: "1140px",
                             width: "100%",
+                            height: "calc(100vh - 2rem)",
                             maxHeight: "calc(100vh - 2rem)",
                         }}
                     >
@@ -1276,7 +1277,10 @@ const UserProfiles = () => {
                         <div
                             className="modal-content"
                             style={{
-                                maxHeight: "calc(100vh - 2rem)",
+                                height: "100%",
+                                maxHeight: "100%",
+                                display: "flex",
+                                flexDirection: "column",
                                 overflow: "hidden",
                             }}
                         >
@@ -1307,14 +1311,26 @@ const UserProfiles = () => {
 
                             {/* MODAL BODY */}
 
-                            <form onSubmit={handleSubmit}>
+                            <form
+                                onSubmit={handleSubmit}
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    flex: 1,
+                                    minHeight: 0,
+                                    overflow: "hidden",
+                                }}
+                            >
 
                                 <div
                                     className="modal-body"
                                     style={{
+                                        flex: 1,
+                                        minHeight: 0,
                                         overflowX: "hidden",
                                         overflowY: "auto",
                                         WebkitOverflowScrolling: "touch",
+                                        paddingBottom: "1.5rem",
                                     }}
                                 >
 
@@ -1442,7 +1458,15 @@ const UserProfiles = () => {
                                         {/* MAIN HEADING + MENU ACCESS */}
                                         <div className="col-12">
                                             <label className="form-label fw-bold">Main Heading & Menu Access</label>
-                                            <div className="border rounded p-4 bg-light">
+                                            <div
+                                                className="border rounded p-4 bg-light"
+                                                style={{
+                                                    maxHeight: "420px",
+                                                    overflowY: "auto",
+                                                    overflowX: "hidden",
+                                                    WebkitOverflowScrolling: "touch",
+                                                }}
+                                            >
                                                 {headings.length === 0 ? (
                                                     <span className="text-muted">No Main Headings available. Create them from Manage Main Heading.</span>
                                                 ) : headings.map((heading) => {
