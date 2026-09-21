@@ -22,6 +22,7 @@ import ManageMenu from "./Components/Admin/manage-menu";
 import UserProfiles from "./Components/Admin/UserProfiles";
 import PageActivity from "./Components/Admin/PageActivity";
 import LoginHistory from "./Components/Admin/LoginHistory";
+import ManageMainHeading from "./Components/Admin/manage-main-heading";
 
 function DisplayWrapper() {
   const location = useLocation();
@@ -90,6 +91,7 @@ function App() {
                 <Route path="/uploadfile" element={<UploadFile />} />
                 <Route path="/pendingapprovals" element={<PendingApprovals />} />
                 <Route path="/managefolder" element={<ManageFolder />} />
+                <Route path="/managemainheading" element={<ManageMainHeading />} />
                 <Route path="/managemenu" element={<ManageMenu />} />
                 <Route path="/userprofiles" element={<UserProfiles />} />
                 <Route path="/pageactivity" element={<PageActivity />} />
