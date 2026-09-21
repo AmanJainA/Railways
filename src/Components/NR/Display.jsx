@@ -239,6 +239,16 @@ export default function Display({ page }) {
     // Check again because destroyDT may have changed the DOM
     if (!tableRef.current) return;
 
+    // Keep an empty menu as a blank card. DataTables is not initialised
+    // because the empty placeholder row uses colspan and is not a real
+    // DataTables row.
+    if (!rows || rows.length === 0) {
+      tableRef.current.style.display = "none";
+      tableRef.current.innerHTML = "<thead></thead><tbody></tbody>";
+      return;
+    }
+
+    tableRef.current.style.display = "";
     writeThead(hf);
     writeRows(rows, hf);
 
