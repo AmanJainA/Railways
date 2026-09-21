@@ -55,6 +55,17 @@ const UserProfiles = () => {
         fetchHeadings();
     }, []);
 
+    useEffect(() => {
+        if (!showModal) return undefined;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [showModal]);
+
     const fetchHeadings = async () => {
         const { data, error } = await supabase
             .from("main_heading_master")
@@ -687,17 +698,6 @@ const UserProfiles = () => {
     // =========================================================
     // UI
     // =========================================================
-
-    useEffect(() => {
-        if (!showModal) return undefined;
-
-        const previousOverflow = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
-
-        return () => {
-            document.body.style.overflow = previousOverflow;
-        };
-    }, [showModal]);
 
     return (
         <div className="d-flex flex-column flex-root">
