@@ -299,10 +299,12 @@ export default function NRDashboard() {
             <div className="row align-items-center g-4">
               <div className="col-lg-6">
                 <div className="d-flex align-items-center gap-2 mb-3 flex-wrap">
-                  <span className="badge bg-success text-white px-3 py-2 fs-8 fw-bold">
-                    <i className="bi bi-train-front me-1 text-dark"></i>Northern
-                    Railway
-                  </span>
+                  {isNRDataDashboard && (
+                    <span className="badge bg-success text-white px-3 py-2 fs-8 fw-bold">
+                      <i className="bi bi-train-front me-1 text-dark"></i>
+                      Northern Railway
+                    </span>
+                  )}
                   <span className="badge bg-primary text-white px-3 py-2 fs-8">
                     Document Portal
                   </span>
@@ -311,47 +313,46 @@ export default function NRDashboard() {
                 <h1 className="nr-hero-title">
                   {(sessionStorage.getItem("current_heading_name") || "Data") + " Dashboard"}
                 </h1>
-                <p className="nr-hero-sub">
-                  Central repository for all Northern Railway documents, reports
-                  &amp; data files.
-                </p>
 
-                <div className="d-flex gap-3 mt-4 flex-wrap">
-                  <button
-                    onClick={() => navigateToMenu("Study Data")}
-                    className="btn btn-sm btn-primary px-4"
-                  >
-                    <i className="ki-duotone ki-book me-1 fs-5">
-                      <span className="path1"></span>
-                      <span className="path2"></span>
-                    </i>
-                    Study Data
-                  </button>
+                {isNRDataDashboard && (
+                  <p className="nr-hero-sub">
+                    Central repository for all Northern Railway documents, reports
+                    &amp; data files.
+                  </p>
+                )}
 
-                  <button
-                    onClick={() => navigateToMenu("Meeting")}
-                    className="btn btn-sm btn-light-success px-4"
-                  >
-                    <i className="ki-duotone ki-calendar me-1 fs-5">
-                      <span className="path1"></span>
-                      <span className="path2"></span>
-                    </i>
-                    Meetings
-                  </button>
+                {isNRDataDashboard && (
+                  <div className="d-flex gap-3 mt-4 flex-wrap">
+                    {[
+                      { name: "Study Data", label: "Study Data", icon: "ki-book", className: "btn btn-sm btn-primary px-4" },
+                      { name: "Policy", label: "Policies", icon: "ki-shield-tick", className: "btn btn-sm btn-light-dark px-4" },
+                      { name: "Reports", label: "Reports", icon: "ki-slider-horizontal", className: "btn btn-sm btn-light-warning px-4" },
+                    ].map((item) => {
+                      const menu = quickAccessMenus.find(
+                        (m) =>
+                          String(m.menuname || "").trim().toLowerCase() ===
+                          item.name.toLowerCase(),
+                      );
+                      if (!menu) return null;
 
-                  <button
-                    onClick={() => navigateToMenu("Policy")}
-                    className="btn btn-sm btn-light-dark px-4"
-                  >
-                    <i className="ki-duotone ki-shield-tick me-1 fs-5">
-                      <span className="path1"></span>
-                      <span className="path2"></span>
-                    </i>
-                    Policies
-                  </button>
-                </div>
-              </div>
-
+                      return (
+                        <button
+                          key={item.name}
+                          onClick={() => navigateToMenu(menu)}
+                          className={item.className}
+                        >
+                          <i className={`ki-duotone ${item.icon} me-1 fs-5`}>
+                            <span className="path1"></span>
+                            <span className="path2"></span>
+                            <span className="path3"></span>
+                            <span className="path4"></span>
+                          </i>
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               <div className="col-lg-6">
                 <div className="row g-3 justify-content-lg-end">
                   <div className="col-auto">
