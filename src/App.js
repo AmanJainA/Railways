@@ -23,6 +23,7 @@ import UserProfiles from "./Components/Admin/UserProfiles";
 import PageActivity from "./Components/Admin/PageActivity";
 import LoginHistory from "./Components/Admin/LoginHistory";
 import ManageMainHeading from "./Components/Admin/manage-main-heading";
+import WorkTracker from "./Components/Admin/WorkTracker";
 
 function DisplayWrapper() {
   const location = useLocation();
@@ -30,10 +31,7 @@ function DisplayWrapper() {
 
   useEffect(() => {
     if (location.state?.menu) {
-      const slug = location.state.menu
-        .toLowerCase()
-        .replace(/\s+/g, "");
-
+      const slug = location.state.menu.toLowerCase().replace(/\s+/g, "");
       sessionStorage.setItem("current_page", slug);
       setPage(slug);
     } else {
@@ -41,25 +39,21 @@ function DisplayWrapper() {
     }
   }, [location]);
 
-  if (!page) {
-    return <div className="p-10 text-center">No page selected</div>;
-  }
-
+  if (!page) return <div className="p-10 text-center">No page selected</div>;
   return <Display page={page} />;
 }
+
 function App() {
   useEffect(() => {
     const redirect = sessionStorage.getItem("redirect");
-
     if (redirect) {
       sessionStorage.removeItem("redirect");
       window.history.replaceState({}, "", redirect);
     }
   }, []);
-  const basename =
-  process.env.NODE_ENV === "production"
-    ? "/Railways"
-    : "/Railways";
+
+  const basename = process.env.NODE_ENV === "production" ? "/Railways" : "/Railways";
+
   return (
     <BrowserRouter basename={basename} future={{
       v7_startTransition: true,
@@ -67,37 +61,36 @@ function App() {
     }}>
       <PageTracker/>
       <Routes>
-        {/* ✅ Without Sidebar */}
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/nr/viewer" element={<Viewer />} />  {/* 👈 moved outside */}
+        <Route path="/nr/viewer" element={<Viewer />} />
 
-        {/* ✅ With Sidebar */}
         <Route
           path="/*"
           element={
             <ProtectedRoute>
-            <SidebarLayout>
-              <Routes>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/mydata" element={<MyData />} />
-                <Route path="/nangia" element={<Nangia />} />
-                <Route path="/nr/dashboard" element={<NRDashboard/>}/>
-                <Route path="/nr/display" element={<DisplayWrapper />} />
-                <Route path="/changepassword" element={<ChangePassword />} />
-                <Route path="/manageupload" element={<ManageUploads />} />
-                <Route path="/uploadfile" element={<UploadFile />} />
-                <Route path="/pendingapprovals" element={<PendingApprovals />} />
-                <Route path="/managefolder" element={<ManageFolder />} />
-                <Route path="/managemainheading" element={<ManageMainHeading />} />
-                <Route path="/managemenu" element={<ManageMenu />} />
-                <Route path="/userprofiles" element={<UserProfiles />} />
-                <Route path="/pageactivity" element={<PageActivity />} />
-                <Route path="/loginhistory" element={<LoginHistory />} />
-              </Routes>
-            </SidebarLayout>
+              <SidebarLayout>
+                <Routes>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/mydata" element={<MyData />} />
+                  <Route path="/nangia" element={<Nangia />} />
+                  <Route path="/nr/dashboard" element={<NRDashboard/>}/>
+                  <Route path="/nr/display" element={<DisplayWrapper />} />
+                  <Route path="/changepassword" element={<ChangePassword />} />
+                  <Route path="/manageupload" element={<ManageUploads />} />
+                  <Route path="/uploadfile" element={<UploadFile />} />
+                  <Route path="/pendingapprovals" element={<PendingApprovals />} />
+                  <Route path="/managefolder" element={<ManageFolder />} />
+                  <Route path="/managemainheading" element={<ManageMainHeading />} />
+                  <Route path="/managemenu" element={<ManageMenu />} />
+                  <Route path="/userprofiles" element={<UserProfiles />} />
+                  <Route path="/pageactivity" element={<PageActivity />} />
+                  <Route path="/loginhistory" element={<LoginHistory />} />
+                  <Route path="/worktracker" element={<WorkTracker />} />
+                </Routes>
+              </SidebarLayout>
             </ProtectedRoute>
           }
         />
