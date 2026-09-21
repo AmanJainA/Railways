@@ -30,11 +30,13 @@ export default function NRDashboard() {
       // ==========================
       // Fetch Files
       // ==========================
-      const { data: files, error } = await supabase
+      let filesQuery = supabase
         .from("datacollection")
         .select("*")
         .eq("status", 1)
         .not("menuname", "in", '("mydata","Nangia")');
+      if (currentHeadingId) filesQuery = filesQuery.eq("main_heading_id", currentHeadingId);
+      const { data: files, error } = await filesQuery;
 
       if (error) {
         console.error(error);
