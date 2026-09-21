@@ -237,7 +237,7 @@ export default function NRDashboard() {
                 </div>
 
                 <h1 className="nr-hero-title">
-                  Northern Railway Data Dashboard
+                  {(sessionStorage.getItem("current_heading_name") || "Data") + " Dashboard"}
                 </h1>
                 <p className="nr-hero-sub">
                   Central repository for all Northern Railway documents, reports
