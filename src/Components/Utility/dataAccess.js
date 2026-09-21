@@ -33,16 +33,28 @@ export async function getAccessibleHeadings() {
 }
 
 export async function getAccessibleMenus(mainHeadingId) {
-  let query = supabase
+  const { data: menus, error } = await supabase
     .from("menu_master")
     .select("*")
     .eq("status", "1")
     .eq("main_heading_id", Number(mainHeadingId))
     .order("id", { ascending: true });
 
-  const { data, error } = await query;
   if (error) throw error;
-  return data || [];
+  if (isAdminUser()) return menus || [];
+
+  const userId = getCurrentUserId();
+  if (!userId) return [];
+
+  const { data: access, error: accessError } = await supabase
+    .from("user_menu_access")
+    .select("menu_id")
+    .eq("user_id", userId);
+
+  if (accessError) throw accessError;
+
+  const allowed = new Set((access || []).map((x) => Number(x.menu_id)));
+  return (menus || []).filter((menu) => allowed.has(Number(menu.id)));
 }
 
 export async function getAccessibleFolders(mainHeadingId, menuId) {
