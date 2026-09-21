@@ -13,6 +13,11 @@ export default function NRDashboard() {
   const navigateToMenu = (menu) => {
     if (!menu) return;
 
+    sessionStorage.setItem("current_heading_id", String(currentHeadingId));
+    sessionStorage.setItem(
+      "current_heading_name",
+      sessionStorage.getItem("current_heading_name") || ""
+    );
     sessionStorage.setItem("current_menu_id", String(menu.id));
     sessionStorage.setItem("current_menu_name", menu.menuname || "");
     sessionStorage.setItem(
@@ -74,13 +79,24 @@ export default function NRDashboard() {
   async function loadDashboard(headingId) {
     try {
       // ==========================
-      // Fetch Files
+      // Quick Access: load the actual menus belonging to this Main Heading.
+      // This is intentionally based on menu_master, not datacollection, so
+      // a menu still appears even when it currently has zero files.
+      // Non-admin users are additionally restricted by user_menu_access.
+      const accessibleMenus = await getAccessibleMenus(headingId);
+      setQuickAccessMenus(
+        (accessibleMenus || []).filter(
+          (menu) => String(menu.menuname || "").trim().toLowerCase() !== "dashboard"
+        )
+      );
+
+      // ==========================
+      // Fetch Files for this Main Heading
       // ==========================
       let filesQuery = supabase
         .from("datacollection")
         .select("*")
-        .eq("status", 1)
-        .not("menuname", "in", '("mydata","Nangia")');
+        .eq("status", 1);
       if (headingId) filesQuery = filesQuery.eq("main_heading_id", headingId);
       const { data: files, error } = await filesQuery;
 
