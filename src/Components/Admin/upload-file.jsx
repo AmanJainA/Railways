@@ -1,315 +1,85 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "../../supabase";
+import { getAccessibleHeadings, getAccessibleMenus, getAccessibleFolders } from "../Utility/dataAccess";
 
-const ALLOWED_EXT = [
-  "jpg",
-  "jpeg",
-  "png",
-  "gif",
-  "pdf",
-  "doc",
-  "docx",
-  "xls",
-  "xlsx",
-  "ppt",
-  "pptx",
-];
+const ALLOWED_EXT=["jpg","jpeg","png","gif","pdf","doc","docx","xls","xlsx","ppt","pptx"];
 
-const UploadFile = () => {
-  const [form, setForm] = useState({ name: "", menuname: "", folder: "" });
-  const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState(null);
+export default function UploadFile(){
+  const uploaded_by=sessionStorage.getItem("user")||"";
+  const dept=sessionStorage.getItem("dept")||"";
+  const [mode,setMode]=useState("file");
+  const [headings,setHeadings]=useState([]);
+  const [menus,setMenus]=useState([]);
+  const [folders,setFolders]=useState([]);
+  const [form,setForm]=useState({main_heading_id:"",menu_id:"",folder_id:"",name:"",onedrive_path:""});
+  const [file,setFile]=useState(null);
+  const [loading,setLoading]=useState(false);
+  const [alert,setAlert]=useState(null);
 
-  const [menus, setMenus] = useState([]);
-  const [folders, setFolders] = useState([]);
+  const showAlert=(type,title,message)=>{setAlert({type,title,message});setTimeout(()=>setAlert(null),5000);};
 
-  // pulled from session set at login (Login.jsx) - only used for display + uploaded_by
-  const uploaded_by = sessionStorage.getItem("user") || "";
-  const dept = sessionStorage.getItem("dept") || "";
+  useEffect(()=>{(async()=>{try{const hs=await getAccessibleHeadings();setHeadings(hs);if(hs.length)setForm(x=>({...x,main_heading_id:String(hs[0].id)}));}catch(e){showAlert("danger","Error",e.message);}})();},[]);
+  useEffect(()=>{if(!form.main_heading_id){setMenus([]);setFolders([]);return;}(async()=>{try{setMenus(await getAccessibleMenus(form.main_heading_id));setFolders([]);setForm(x=>({...x,menu_id:"",folder_id:""}));}catch(e){showAlert("danger","Error",e.message);}})();},[form.main_heading_id]);
+  useEffect(()=>{if(!form.main_heading_id||!form.menu_id){setFolders([]);return;}(async()=>{try{setFolders(await getAccessibleFolders(form.main_heading_id,form.menu_id));}catch(e){showAlert("danger","Error",e.message);}})();},[form.main_heading_id,form.menu_id]);
 
-  useEffect(() => {
-    const loadMenus = async () => {
-      const { data, error } = await supabase
-        .from("menu_master")
-        .select("*")
-        .eq("status", 1)
-        .order("menuname");
+  const menu=menus.find(m=>Number(m.id)===Number(form.menu_id));
+  const folder=folders.find(f=>Number(f.id)===Number(form.folder_id));
 
-      if (!error) setMenus(data);
-    };
+  const onFile=e=>{const f=e.target.files?.[0];if(!f)return;const ext=f.name.split(".").pop().toLowerCase();if(!ALLOWED_EXT.includes(ext)){showAlert("danger","Invalid File","Allowed types: Images, PDF, DOC, XLS, PPT.");e.target.value="";return;}setFile(f);};
 
-    loadMenus();
-  }, []);
+  const reset=()=>{setForm(x=>({...x,name:"",folder_id:"",onedrive_path:""}));setFile(null);const el=document.getElementById("uploadFileInput");if(el)el.value="";};
 
-  // whenever the chosen menu changes, load its folders
-  useEffect(() => {
-    if (!form.menuname) {
-      setFolders([]);
-      return;
-    }
-
-    const loadFolders = async () => {
-      const { data, error } = await supabase
-        .from("folder_master")
-        .select("*")
-        .eq("menuname", form.menuname)
-        .order("foldername");
-
-      if (!error) setFolders(data);
-    };
-
-    loadFolders();
-  }, [form.menuname]);
-
-  const showAlert = (type, title, message) =>
-    setAlert({ type, title, message });
-
-  const handleFileChange = (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    const ext = f.name.split(".").pop().toLowerCase();
-    if (!ALLOWED_EXT.includes(ext)) {
-      showAlert(
-        "danger",
-        "Invalid File",
-        "Allowed types: Images, PDF, DOC, XLS, PPT",
-      );
-      e.target.value = "";
-      setFile(null);
-      return;
-    }
-    setFile(f);
-  };
-
-  const handleSubmit = async (e) => {
+  const submit=async e=>{
     e.preventDefault();
-
-    if (!form.name || !form.menuname || !file) {
-      showAlert("danger", "Error", "Please fill all required fields.");
-      return;
-    }
-
+    if(!form.main_heading_id||!form.menu_id||!form.name.trim()){showAlert("danger","Error","Please select Main Heading, Menu and enter a File Title.");return;}
+    if(mode==="file"&&!file){showAlert("danger","Error","Please select a file.");return;}
+    if(mode==="onedrive"&&!form.onedrive_path.trim()){showAlert("danger","Error","Please enter the OneDrive path/address.");return;}
     setLoading(true);
-
-    try {
-      const ext = file.name.split(".").pop();
-
-      const filename =
-        Date.now() + "_" + Math.random().toString(36).substring(2) + "." + ext;
-
-      const { error: uploadError } = await supabase.storage
-        .from("documents")
-        .upload(filename, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: collection, error: collectionError } = await supabase
-        .from("datacollection")
-        .insert({
-          name: form.name,
-          menuname: form.menuname,
-          folder: form.folder,
-          type: file.name.split(".").pop().toLowerCase(),
-          status: 0,
-          uploaded_by,
-          links: filename,
-          uploaded_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (collectionError) {
-        alert(JSON.stringify(collectionError, null, 2));
-        throw collectionError;
+    try{
+      let links="",type="",source_type=mode==="file"?"file_upload":"onedrive_path";
+      if(mode==="file"){
+        const ext=file.name.split(".").pop().toLowerCase();
+        const filename=Date.now()+"_"+Math.random().toString(36).substring(2)+"."+ext;
+        const {error}=await supabase.storage.from("documents").upload(filename,file);
+        if(error)throw error;
+        links=filename;type=ext;
+      }else{
+        links=form.onedrive_path.trim();
+        type="ONEDRIVE";
       }
-      const { error: fileError } = await supabase
-        .from("file_uploads")
-        .insert({
-          datacollection_id: collection.id,
-          uploaded_by,
-        });
-
-      if (fileError) throw fileError;
-      // Send notification mail to admin
-      await fetch("https://samrat.cu.ma/send_upload_notification.php", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: form.name,
-          menu: form.menuname,
-          folder: form.folder,
-          uploaded_by,
-          department: dept,
-          filename,
-        }),
-      });
-      showAlert("success", "Success", "File uploaded successfully.");
-
-      setForm({
-        name: "",
-        menuname: "",
-        folder: "",
-      });
-
-      setFile(null);
-
-      document.getElementById("uploadFileInput").value = "";
-    } catch (err) {
-      showAlert("danger", "Error", err.message);
-    }
-
+      const {data:collection,error}=await supabase.from("datacollection").insert({
+        name:form.name.trim(),main_heading_id:Number(form.main_heading_id),menu_id:Number(form.menu_id),
+        folder_id:form.folder_id?Number(form.folder_id):null,menuname:menu?.menuname||"",folder:folder?.foldername||null,
+        type,status:0,remark:null,uploaded_by,uploaded_at:new Date().toISOString(),links,source_type
+      }).select().single();
+      if(error)throw error;
+      await supabase.from("file_uploads").insert({datacollection_id:collection.id,uploaded_by});
+      try{await fetch("https://samrat.cu.ma/send_upload_notification.php",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+        title:form.name.trim(),menu:menu?.menuname||"",folder:folder?.foldername||"",uploaded_by,department:dept,filename:links,source_type
+      })});}catch(e){console.log("Mail Error",e);}
+      showAlert("success","Submitted","Your "+(mode==="file"?"file":"OneDrive link")+" has been submitted for admin approval.");
+      reset();
+    }catch(err){showAlert("danger","Error",err.message);}
     setLoading(false);
   };
 
-  return (
-    <div
-      id="kt_body"
-      className="header-fixed header-tablet-and-mobile-fixed aside-fixed"
-    >
-      <div
-        className="content d-flex flex-column flex-column-fluid fs-6"
-        id="kt_content"
-      >
-        <div className="container-xxl mt-5">
-          <div className="card shadow-sm">
-            <div className="card-header">
-              <h3 className="card-title fw-bold">
-                <i className="ki-duotone ki-cloud-add fs-2 me-2 text-primary">
-                  <span className="path1"></span>
-                  <span className="path2"></span>
-                </i>
-                Upload File
-              </h3>
-            </div>
-
-            <div className="card-body">
-              {alert && (
-                <div className={`alert alert-${alert.type} mb-6`}>
-                  <h4 className="mb-1">{alert.title}</h4>
-                  <span>{alert.message}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit}>
-                <div className="row g-6">
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold required">
-                      File Title
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control form-control-solid"
-                      value={form.name}
-                      onChange={(e) =>
-                        setForm({ ...form, name: e.target.value })
-                      }
-                      placeholder="e.g. Aadhar Card"
-                      required
-                    />
-                  </div>
-
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold required">
-                      Menu Name
-                    </label>
-                    <select
-                      className="form-select form-select-solid"
-                      value={form.menuname}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          menuname: e.target.value,
-                          folder: "",
-                        })
-                      }
-                      required
-                    >
-                      <option value="">Select Menu</option>
-                      {menus.map((m) => (
-                        <option key={m.id} value={m.menuname}>
-                          {m.menuname}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold">
-                      Folder (optional)
-                    </label>
-                    <input
-                      type="text"
-                      list="folderOptions"
-                      className="form-control form-control-solid"
-                      value={form.folder}
-                      onChange={(e) =>
-                        setForm({ ...form, folder: e.target.value })
-                      }
-                      placeholder="Pick existing or type a new folder"
-                      disabled={!form.menuname}
-                    />
-                    <datalist id="folderOptions">
-                      {folders.map((f) => (
-                        <option key={f.id} value={f.foldername} />
-                      ))}
-                    </datalist>
-                  </div>
-
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold required">File</label>
-                    <input
-                      id="uploadFileInput"
-                      type="file"
-                      className="form-control form-control-solid"
-                      accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                      onChange={handleFileChange}
-                      required
-                    />
-                    <div className="form-text">
-                      Allowed: Image, PDF, DOC, XLS, PPT
-                    </div>
-                  </div>
-
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold">Uploaded By</label>
-                    <input
-                      type="text"
-                      className="form-control form-control-solid"
-                      value={uploaded_by}
-                      disabled
-                    />
-                  </div>
-
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold">Department</label>
-                    <input
-                      type="text"
-                      className="form-control form-control-solid"
-                      value={dept}
-                      disabled
-                    />
-                  </div>
-                </div>
-
-                <div className="text-end mt-8">
-                  <button
-                    type="submit"
-                    className="btn btn-primary px-6"
-                    disabled={loading}
-                  >
-                    {loading ? "Uploading..." : "Submit for Approval"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+  return <div className="content d-flex flex-column flex-column-fluid fs-6" id="kt_content"><div className="container-xxl mt-5">
+    <div className="card shadow-sm"><div className="card-header"><h3 className="card-title fw-bold"><i className="ki-duotone ki-cloud-add fs-2 me-2 text-primary"><span className="path1"></span><span className="path2"></span></i>Upload Files</h3></div>
+    <div className="card-body">
+      {alert&&<div className={`alert alert-${alert.type} mb-6`}><h4 className="mb-1">{alert.title}</h4><span>{alert.message}</span></div>}
+      <div className="d-flex gap-2 mb-7">
+        <button type="button" className={`btn ${mode==="file"?"btn-primary":"btn-light-primary"}`} onClick={()=>setMode("file")}>Upload File</button>
+        <button type="button" className={`btn ${mode==="onedrive"?"btn-primary":"btn-light-primary"}`} onClick={()=>setMode("onedrive")}>Add OneDrive Path</button>
       </div>
-    </div>
-  );
-};
-
-export default UploadFile;
+      <form onSubmit={submit}><div className="row g-6">
+        <div className="col-md-4"><label className="form-label fw-bold required">Main Heading</label><select className="form-select form-select-solid" value={form.main_heading_id} onChange={e=>setForm({...form,main_heading_id:e.target.value})} required><option value="">Select Main Heading</option>{headings.map(h=><option key={h.id} value={h.id}>{h.headingname}</option>)}</select></div>
+        <div className="col-md-4"><label className="form-label fw-bold required">Menu</label><select className="form-select form-select-solid" value={form.menu_id} onChange={e=>setForm({...form,menu_id:e.target.value,folder_id:""})} required><option value="">Select Menu</option>{menus.map(m=><option key={m.id} value={m.id}>{m.menuname}</option>)}</select></div>
+        <div className="col-md-4"><label className="form-label fw-bold">Folder</label><select className="form-select form-select-solid" value={form.folder_id} onChange={e=>setForm({...form,folder_id:e.target.value})} disabled={!form.menu_id}><option value="">No Folder</option>{folders.map(f=><option key={f.id} value={f.id}>{f.foldername}</option>)}</select></div>
+        <div className="col-md-6"><label className="form-label fw-bold required">File Title</label><input className="form-control form-control-solid" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Enter document title" required/></div>
+        {mode==="file"?<div className="col-md-6"><label className="form-label fw-bold required">File</label><input id="uploadFileInput" type="file" className="form-control form-control-solid" accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" onChange={onFile} required/><div className="form-text">The file is stored in Supabase Storage and remains pending until admin approval.</div></div>:<div className="col-md-6"><label className="form-label fw-bold required">OneDrive Path / Address</label><input type="url" className="form-control form-control-solid" value={form.onedrive_path} onChange={e=>setForm({...form,onedrive_path:e.target.value})} placeholder="https://...sharepoint.com/..." required/><div className="form-text">Only the path/address is stored. The link is not published until admin approval.</div></div>}
+        <div className="col-md-6"><label className="form-label fw-bold">Uploaded By</label><input className="form-control form-control-solid" value={uploaded_by} disabled/></div>
+        <div className="col-md-6"><label className="form-label fw-bold">Department</label><input className="form-control form-control-solid" value={dept} disabled/></div>
+      </div><div className="text-end mt-8"><button className="btn btn-primary px-6" disabled={loading}>{loading?"Submitting...":"Submit for Approval"}</button></div></form>
+    </div></div>
+  </div></div>;
+}
