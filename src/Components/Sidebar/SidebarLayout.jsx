@@ -556,7 +556,9 @@ const SidebarLayout = ({ children }) => {
                 {headings.map((heading) => {
                   const menus = headingMenus[heading.id] || [];
                   const isOpen = !!openHeadings[heading.id];
-                  const headingActive = Number(sessionStorage.getItem("current_heading_id")) === Number(heading.id) && currentPath.startsWith("/nr");
+                  const selectedHeadingId = Number(sessionStorage.getItem("current_heading_id"));
+                  const headingActive = selectedHeadingId === Number(heading.id) && currentPath.startsWith("/nr");
+                  const headingDashboardActive = currentPath === "/nr/dashboard" && selectedHeadingId === Number(heading.id);
                   return (
                     <div className={`menu-item menu-accordion mb-1${isOpen ? " show" : ""}`} key={heading.id}>
                       <div
@@ -571,7 +573,7 @@ const SidebarLayout = ({ children }) => {
                       <div className="menu-sub menu-sub-accordion">
                         <div className="menu-item">
                           <button
-                            className={`menu-link w-100${currentPath === "/nr/dashboard" && headingActive ? " active" : ""}`}
+                            className={`menu-link w-100${headingDashboardActive ? " active" : ""}`}
                             style={{ background: "none", border: "none" }}
                             onClick={() => {
                               sessionStorage.setItem("current_heading_id", String(heading.id));
