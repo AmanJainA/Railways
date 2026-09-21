@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../supabase";
+import { useNavigate } from "react-router-dom";
 
 const ManageMainHeading = () => {
+  const navigate = useNavigate();
   const username = sessionStorage.getItem("user") || "Admin";
   const [rows, setRows] = useState([]);
   const [name, setName] = useState("");
@@ -25,7 +27,13 @@ const ManageMainHeading = () => {
     else setRows(data || []);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if ((sessionStorage.getItem("role") || "").toLowerCase() !== "admin") {
+      navigate("/nr/dashboard", { replace: true });
+      return;
+    }
+    load();
+  }, [navigate]);
 
   const add = async (e) => {
     e.preventDefault();
