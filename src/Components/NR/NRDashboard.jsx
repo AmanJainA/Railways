@@ -353,6 +353,8 @@ export default function NRDashboard() {
                     })}
                   </div>
                 )}
+              </div>
+
               <div className="col-lg-6">
                 <div className="row g-3 justify-content-lg-end">
                   <div className="col-auto">
