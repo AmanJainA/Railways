@@ -585,7 +585,15 @@ const SidebarLayout = ({ children }) => {
                             onClick={() => {
                               sessionStorage.setItem("current_heading_id", String(heading.id));
                               sessionStorage.setItem("current_heading_name", heading.headingname);
-                              navigate("/nr/dashboard");
+                              sessionStorage.removeItem("current_menu_id");
+                              sessionStorage.removeItem("current_menu_name");
+                              sessionStorage.setItem("current_page", "dashboard");
+                              setOpenHeadings(
+                                Object.fromEntries(
+                                  headings.map((h) => [h.id, Number(h.id) === Number(heading.id)])
+                                )
+                              );
+                              navigate(`/nr/dashboard?heading=${heading.id}`);
                             }}
                           >
                             <span className="menu-bullet"><span className="bullet bullet-dot"></span></span>
