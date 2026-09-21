@@ -1,0 +1,604 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../../supabase";
+import {
+  getAccessibleHeadings,
+  getAccessibleMenus,
+  getAccessibleFolders,
+  isAdminUser,
+  getCurrentUserId,
+} from "../Utility/dataAccess";
+
+const STATUS = {
+  todo: { label: "To Do", badge: "secondary" },
+  in_progress: { label: "In Progress", badge: "primary" },
+  done: { label: "Done", badge: "success" },
+  blocked: { label: "Blocked", badge: "danger" },
+};
+
+const PRIORITY = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  urgent: "Urgent",
+};
+
+const WORK_TYPES = [
+  ["study", "Study / Report"],
+  ["letter", "Letter"],
+  ["meeting", "Meeting"],
+  ["ppt", "PPT / Presentation"],
+  ["data_requirement", "Data Requirement"],
+  ["acceptance", "Acceptance / Response"],
+  ["format", "Format / Template"],
+  ["analysis", "Analysis"],
+  ["todo", "General Todo"],
+  ["other", "Other"],
+];
+
+const emptyForm = {
+  main_heading_id: "",
+  menu_id: "",
+  folder_id: "",
+  parent_id: "",
+  title: "",
+  description: "",
+  work_type: "todo",
+  status: "todo",
+  priority: "medium",
+  due_date: "",
+  linked_ids: [],
+};
+
+export default function WorkTracker() {
+  const navigate = useNavigate();
+  const [headings, setHeadings] = useState([]);
+  const [menus, setMenus] = useState([]);
+  const [folders, setFolders] = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [items, setItems] = useState([]);
+  const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState(null);
+  const [filterHeading, setFilterHeading] = useState("all");
+  const [filterMenu, setFilterMenu] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [alert, setAlert] = useState(null);
+
+  const currentUserId = getCurrentUserId();
+  const admin = isAdminUser();
+
+  const showAlert = (type, title, message) => {
+    setAlert({ type, title, message });
+    window.clearTimeout(showAlert.timer);
+    showAlert.timer = window.setTimeout(() => setAlert(null), 4500);
+  };
+
+  const loadBase = async () => {
+    try {
+      const hs = await getAccessibleHeadings();
+      setHeadings(hs);
+
+      const menuGroups = await Promise.all(
+        hs.map(async (h) => await getAccessibleMenus(h.id))
+      );
+      const ms = menuGroups.flat();
+      setMenus(ms);
+
+      const folderGroups = await Promise.all(
+        hs.flatMap((h) =>
+          ms
+            .filter((m) => Number(m.main_heading_id) === Number(h.id))
+            .map((m) => getAccessibleFolders(h.id, m.id))
+        )
+      );
+      setFolders(folderGroups.flat());
+
+      const headingIds = hs.map((h) => Number(h.id));
+      if (!headingIds.length) {
+        setDocuments([]);
+        return;
+      }
+
+      const { data: docs, error } = await supabase
+        .from("datacollection")
+        .select("id,name,links,type,status,main_heading_id,menu_id,folder_id,menuname,folder,source_type")
+        .in("main_heading_id", headingIds)
+        .eq("status", 1)
+        .order("id", { ascending: false });
+
+      if (error) throw error;
+      setDocuments(docs || []);
+    } catch (e) {
+      showAlert("danger", "Error", e.message);
+    }
+  };
+
+  const loadItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("work_items")
+        .select("*")
+        .order("main_heading_id", { ascending: true })
+        .order("menu_id", { ascending: true })
+        .order("sort_order", { ascending: true })
+        .order("id", { ascending: true });
+
+      if (error) throw error;
+
+      const rows = data || [];
+      const ids = rows.map((x) => x.id);
+
+      let links = [];
+      if (ids.length) {
+        const { data: linkRows, error: linkError } = await supabase
+          .from("work_item_links")
+          .select("id,work_item_id,datacollection_id,relation_type")
+          .in("work_item_id", ids);
+        if (linkError) throw linkError;
+        links = linkRows || [];
+      }
+
+      const enriched = rows.map((row) => ({
+        ...row,
+        links: links.filter((l) => Number(l.work_item_id) === Number(row.id)),
+      }));
+
+      setItems(enriched);
+    } catch (e) {
+      showAlert("danger", "Error", e.message);
+    }
+  };
+
+  useEffect(() => {
+    const user = sessionStorage.getItem("user");
+    if (!user) {
+      navigate("/");
+      return;
+    }
+    (async () => {
+      setLoading(true);
+      await loadBase();
+      await loadItems();
+      setLoading(false);
+    })();
+    // eslint-disable-next-line
+  }, []);
+
+  const visibleItems = useMemo(() => {
+    const allowedHeadingIds = new Set(headings.map((h) => Number(h.id)));
+    return items.filter((x) => {
+      if (!allowedHeadingIds.has(Number(x.main_heading_id))) return false;
+      if (filterHeading !== "all" && Number(x.main_heading_id) !== Number(filterHeading)) return false;
+      if (filterMenu !== "all" && Number(x.menu_id) !== Number(filterMenu)) return false;
+      if (filterStatus !== "all" && x.status !== filterStatus) return false;
+      return true;
+    });
+  }, [items, headings, filterHeading, filterMenu, filterStatus]);
+
+  const headingName = (id) =>
+    headings.find((x) => Number(x.id) === Number(id))?.headingname || `Heading #${id}`;
+  const menuName = (id) =>
+    menus.find((x) => Number(x.id) === Number(id))?.menuname || `Menu #${id}`;
+  const folderName = (id) =>
+    folders.find((x) => Number(x.id) === Number(id))?.foldername || "";
+
+  const docById = useMemo(
+    () => Object.fromEntries(documents.map((d) => [Number(d.id), d])),
+    [documents]
+  );
+
+  const childMap = useMemo(() => {
+    const map = {};
+    visibleItems.forEach((x) => {
+      const key = x.parent_id ? Number(x.parent_id) : 0;
+      if (!map[key]) map[key] = [];
+      map[key].push(x);
+    });
+    return map;
+  }, [visibleItems]);
+
+  const flattenTree = (parentId = 0, depth = 0, output = []) => {
+    (childMap[parentId] || []).forEach((x) => {
+      output.push({ ...x, depth });
+      flattenTree(Number(x.id), depth + 1, output);
+    });
+    return output;
+  };
+
+  const treeItems = useMemo(() => flattenTree(), [childMap]);
+
+  const resetForm = () => {
+    setForm(emptyForm);
+    setEditingId(null);
+    setMenus([]);
+    setFolders([]);
+  };
+
+  const startNew = () => {
+    const firstHeading = headings[0];
+    if (!firstHeading) return;
+    setEditingId(null);
+    setForm({
+      ...emptyForm,
+      main_heading_id: String(firstHeading.id),
+    });
+  };
+
+  const onHeadingChange = async (value) => {
+    setForm((x) => ({
+      ...x,
+      main_heading_id: value,
+      menu_id: "",
+      folder_id: "",
+      parent_id: "",
+      linked_ids: [],
+    }));
+    if (!value) {
+      setMenus([]);
+      setFolders([]);
+      return;
+    }
+    try {
+      setMenus(await getAccessibleMenus(value));
+      setFolders([]);
+    } catch (e) {
+      showAlert("danger", "Error", e.message);
+    }
+  };
+
+  const onMenuChange = async (value) => {
+    setForm((x) => ({ ...x, menu_id: value, folder_id: "", parent_id: "", linked_ids: [] }));
+    if (!value || !form.main_heading_id) {
+      setFolders([]);
+      return;
+    }
+    try {
+      setFolders(await getAccessibleFolders(form.main_heading_id, value));
+    } catch (e) {
+      showAlert("danger", "Error", e.message);
+    }
+  };
+
+  const editItem = async (item) => {
+    const ms = await getAccessibleMenus(item.main_heading_id);
+    const fs = await getAccessibleFolders(item.main_heading_id, item.menu_id);
+    setMenus(ms);
+    setFolders(fs);
+    setEditingId(item.id);
+    setForm({
+      main_heading_id: String(item.main_heading_id),
+      menu_id: String(item.menu_id),
+      folder_id: item.folder_id ? String(item.folder_id) : "",
+      parent_id: item.parent_id ? String(item.parent_id) : "",
+      title: item.title || "",
+      description: item.description || "",
+      work_type: item.work_type || "todo",
+      status: item.status || "todo",
+      priority: item.priority || "medium",
+      due_date: item.due_date || "",
+      linked_ids: (item.links || []).map((x) => Number(x.datacollection_id)),
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const deleteItem = async (item) => {
+    if (!window.confirm(`Delete "${item.title}" and all of its linked references?`)) return;
+    try {
+      const { error } = await supabase.from("work_items").delete().eq("id", item.id);
+      if (error) throw error;
+      showAlert("success", "Deleted", "Work item deleted successfully.");
+      await loadItems();
+      if (editingId === item.id) resetForm();
+    } catch (e) {
+      showAlert("danger", "Error", e.message);
+    }
+  };
+
+  const save = async (e) => {
+    e.preventDefault();
+    if (!form.main_heading_id || !form.menu_id || !form.title.trim()) {
+      showAlert("danger", "Required", "Main Heading, Menu and Work / Todo title are required.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        main_heading_id: Number(form.main_heading_id),
+        menu_id: Number(form.menu_id),
+        folder_id: form.folder_id ? Number(form.folder_id) : null,
+        parent_id: form.parent_id ? Number(form.parent_id) : null,
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+        work_type: form.work_type,
+        status: form.status,
+        priority: form.priority,
+        due_date: form.due_date || null,
+        created_by: currentUserId || null,
+      };
+
+      let workId = editingId;
+
+      if (editingId) {
+        const { error } = await supabase.from("work_items").update(payload).eq("id", editingId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from("work_items")
+          .insert(payload)
+          .select("id")
+          .single();
+        if (error) throw error;
+        workId = data.id;
+      }
+
+      await supabase.from("work_item_links").delete().eq("work_item_id", workId);
+
+      if (form.linked_ids.length) {
+        const linkRows = form.linked_ids.map((docId) => ({
+          work_item_id: workId,
+          datacollection_id: Number(docId),
+          relation_type: "deliverable",
+          created_by: currentUserId || null,
+        }));
+        const { error: linkError } = await supabase.from("work_item_links").insert(linkRows);
+        if (linkError) throw linkError;
+      }
+
+      showAlert("success", editingId ? "Updated" : "Created", `"${form.title.trim()}" saved successfully.`);
+      await loadItems();
+      resetForm();
+    } catch (e) {
+      showAlert("danger", "Error", e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const filteredMenus = filterHeading === "all"
+    ? menus
+    : menus.filter((m) => Number(m.main_heading_id) === Number(filterHeading));
+
+  const formDocuments = documents.filter((d) =>
+    Number(d.main_heading_id) === Number(form.main_heading_id) &&
+    Number(d.menu_id) === Number(form.menu_id)
+  );
+
+  const formParentOptions = items.filter((x) =>
+    Number(x.main_heading_id) === Number(form.main_heading_id) &&
+    Number(x.menu_id) === Number(form.menu_id) &&
+    Number(x.id) !== Number(editingId)
+  );
+
+  const openDocument = (doc) => {
+    if (!doc?.links) return;
+    sessionStorage.setItem("viewer_file", doc.links);
+    navigate("/nr/viewer");
+  };
+
+  return (
+    <div className="d-flex flex-column flex-column-fluid" id="kt_content">
+      <div className="container-xxl py-6">
+        {alert && (
+          <div className={`alert alert-${alert.type} mb-6`}>
+            <strong>{alert.title}</strong>
+            <div>{alert.message}</div>
+          </div>
+        )}
+
+        <div className="card shadow-sm mb-6">
+          <div className="card-header d-flex justify-content-between align-items-center">
+            <div>
+              <h3 className="card-title fw-bold mb-1">
+                <i className="ki-duotone ki-check-square fs-2 me-2 text-primary"><span className="path1"></span><span className="path2"></span></i>
+                Work Tracker / Todo
+              </h3>
+              <div className="text-muted fs-7">
+                Connect every piece of work to its Main Heading → Menu → Folder → Deliverables.
+              </div>
+            </div>
+            <button className="btn btn-light-primary" type="button" onClick={startNew}>
+              <i className="ki-duotone ki-plus fs-2"><span className="path1"></span><span className="path2"></span></i>
+              New Work
+            </button>
+          </div>
+
+          <div className="card-body">
+            <form onSubmit={save}>
+              <div className="row g-5">
+                <div className="col-md-4">
+                  <label className="form-label fw-bold required">Main Heading</label>
+                  <select className="form-select form-select-solid" value={form.main_heading_id} onChange={(e) => onHeadingChange(e.target.value)}>
+                    <option value="">Select Main Heading</option>
+                    {headings.map((h) => <option key={h.id} value={h.id}>{h.headingname}</option>)}
+                  </select>
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label fw-bold required">Menu</label>
+                  <select className="form-select form-select-solid" value={form.menu_id} onChange={(e) => onMenuChange(e.target.value)}>
+                    <option value="">Select Menu</option>
+                    {menus.map((m) => <option key={m.id} value={m.id}>{m.menuname}</option>)}
+                  </select>
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label fw-bold">Folder / Work Segment</label>
+                  <select className="form-select form-select-solid" value={form.folder_id} onChange={(e) => setForm({ ...form, folder_id: e.target.value, parent_id: "" })}>
+                    <option value="">No Folder</option>
+                    {folders.map((f) => <option key={f.id} value={f.id}>{f.foldername}</option>)}
+                  </select>
+                </div>
+
+                <div className="col-md-8">
+                  <label className="form-label fw-bold required">Work / Todo Title</label>
+                  <input className="form-control form-control-solid" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Assignment of IIIrd - Work / Study 1" />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label fw-bold">Parent Work</label>
+                  <select className="form-select form-select-solid" value={form.parent_id} onChange={(e) => setForm({ ...form, parent_id: e.target.value })}>
+                    <option value="">Top-level Work</option>
+                    {formParentOptions.map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}
+                  </select>
+                </div>
+
+                <div className="col-md-4">
+                  <label className="form-label fw-bold">Work Type</label>
+                  <select className="form-select form-select-solid" value={form.work_type} onChange={(e) => setForm({ ...form, work_type: e.target.value })}>
+                    {WORK_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                  </select>
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label fw-bold">Status</label>
+                  <select className="form-select form-select-solid" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+                    {Object.entries(STATUS).map(([value, x]) => <option key={value} value={value}>{x.label}</option>)}
+                  </select>
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label fw-bold">Priority</label>
+                  <select className="form-select form-select-solid" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
+                    {Object.entries(PRIORITY).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                  </select>
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label fw-bold">Due Date</label>
+                  <input type="date" className="form-control form-control-solid" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
+                </div>
+
+                <div className="col-12">
+                  <label className="form-label fw-bold">Description / What We Did</label>
+                  <textarea rows="3" className="form-control form-control-solid" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Explain the work completed, scope, key activity, or next step." />
+                </div>
+
+                <div className="col-12">
+                  <label className="form-label fw-bold">Connected Deliverables / Files</label>
+                  <select
+                    multiple
+                    className="form-select form-select-solid"
+                    style={{ minHeight: 150 }}
+                    value={form.linked_ids.map(String)}
+                    onChange={(e) => setForm({
+                      ...form,
+                      linked_ids: Array.from(e.target.selectedOptions).map((o) => Number(o.value)),
+                    })}
+                  >
+                    {formDocuments.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name} {d.folder ? `— ${d.folder}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="form-text">
+                    Select one or multiple approved files. Use this for the report, PDF, PPT, data requirement letter, acceptance letter, format, presentation, etc.
+                  </div>
+                </div>
+              </div>
+
+              <div className="d-flex justify-content-end gap-3 mt-6">
+                {editingId && <button type="button" className="btn btn-light" onClick={resetForm}>Cancel Edit</button>}
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? "Saving..." : editingId ? "Update Work" : "Save Work"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div className="card shadow-sm">
+          <div className="card-header">
+            <div className="w-100">
+              <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                  <h3 className="card-title fw-bold mb-1">Connected Work Register</h3>
+                  <div className="text-muted fs-7">Use the hierarchy to understand exactly what was done and which deliverables belong to it.</div>
+                </div>
+                <div className="d-flex flex-wrap gap-2">
+                  <select className="form-select form-select-sm" value={filterHeading} onChange={(e) => { setFilterHeading(e.target.value); setFilterMenu("all"); }}>
+                    <option value="all">All Main Headings</option>
+                    {headings.map((h) => <option key={h.id} value={h.id}>{h.headingname}</option>)}
+                  </select>
+                  <select className="form-select form-select-sm" value={filterMenu} onChange={(e) => setFilterMenu(e.target.value)}>
+                    <option value="all">All Menus</option>
+                    {filteredMenus.map((m) => <option key={m.id} value={m.id}>{m.menuname}</option>)}
+                  </select>
+                  <select className="form-select form-select-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                    <option value="all">All Status</option>
+                    {Object.entries(STATUS).map(([v, x]) => <option key={v} value={v}>{x.label}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card-body p-0">
+            {loading ? (
+              <div className="p-10 text-center"><div className="spinner-border text-primary"></div></div>
+            ) : treeItems.length === 0 ? (
+              <div className="p-10 text-center text-muted">
+                No work items found for the selected Main Heading / Menu / Status.
+              </div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4 mb-0">
+                  <thead>
+                    <tr className="fw-bold text-muted bg-light">
+                      <th className="ps-5">Work / Todo</th>
+                      <th>Main Heading</th>
+                      <th>Menu</th>
+                      <th>Folder</th>
+                      <th>Type</th>
+                      <th>Status</th>
+                      <th>Priority</th>
+                      <th>Connected Files</th>
+                      <th className="text-end pe-5">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {treeItems.map((x) => (
+                      <tr key={x.id}>
+                        <td className="ps-5">
+                          <div style={{ paddingLeft: x.depth * 24 }}>
+                            {x.depth > 0 && <span className="text-muted me-2">↳</span>}
+                            <span className="fw-bold text-gray-900">{x.title}</span>
+                            {x.description && <div className="text-muted fs-7 mt-1">{x.description}</div>}
+                          </div>
+                        </td>
+                        <td>{headingName(x.main_heading_id)}</td>
+                        <td>{menuName(x.menu_id)}</td>
+                        <td>{x.folder_id ? folderName(x.folder_id) : "-"}</td>
+                        <td><span className="badge badge-light-info">{WORK_TYPES.find((w) => w[0] === x.work_type)?.[1] || x.work_type}</span></td>
+                        <td><span className={`badge badge-light-${STATUS[x.status]?.badge || "secondary"}`}>{STATUS[x.status]?.label || x.status}</span></td>
+                        <td>{PRIORITY[x.priority] || x.priority}</td>
+                        <td>
+                          <div className="d-flex flex-wrap gap-1">
+                            {(x.links || []).map((link) => {
+                              const doc = docById[Number(link.datacollection_id)];
+                              return doc ? (
+                                <button key={link.id} type="button" className="btn btn-sm btn-light-primary" onClick={() => openDocument(doc)} title={doc.name}>
+                                  {doc.name}
+                                </button>
+                              ) : null;
+                            })}
+                            {!x.links?.length && <span className="text-muted">No files linked</span>}
+                          </div>
+                        </td>
+                        <td className="text-end pe-5 text-nowrap">
+                          <button className="btn btn-sm btn-light-primary me-2" onClick={() => editItem(x)}>Edit</button>
+                          <button className="btn btn-sm btn-light-danger" onClick={() => deleteItem(x)}>Delete</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="alert alert-light-primary mt-6">
+          <strong>How to use it:</strong> Create one top-level work item for the letter/meeting/assignment, then add child work items for each study, report, PPT, data requirement, acceptance letter, format or extra presentation. Link the actual uploaded deliverable(s) to each child item.
+        </div>
+      </div>
+    </div>
+  );
+}
