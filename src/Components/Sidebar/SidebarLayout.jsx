@@ -80,6 +80,34 @@ const SidebarLayout = ({ children }) => {
 
   const userDisplay = user.charAt(0).toUpperCase() + user.slice(1);
   const hasAccess = () => true;
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const hs = await getAccessibleHeadings();
+        if (cancelled) return;
+        setHeadings(hs);
+        const pairs = await Promise.all(
+          hs.map(async (h) => [h.id, await getAccessibleMenus(h.id)])
+        );
+        if (cancelled) return;
+        setHeadingMenus(Object.fromEntries(pairs));
+        const currentHeadingId = Number(sessionStorage.getItem("current_heading_id"));
+        setOpenHeadings(
+          Object.fromEntries(
+            hs.map((h) => [
+              h.id,
+              Number(h.id) === currentHeadingId || currentPath.startsWith("/nr"),
+            ])
+          )
+        );
+      } catch (e) {
+        console.error("Unable to load data navigation", e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isAdmin, currentPath]);
   // Sync NR accordion when route changes
   useEffect(() => {
     if (currentPath.startsWith("/nr")) {
