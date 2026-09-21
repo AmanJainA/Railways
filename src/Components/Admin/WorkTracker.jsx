@@ -59,8 +59,8 @@ export default function WorkTracker() {
   const [items, setItems] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
-  const [filterHeading, setFilterHeading] = useState("all");
-  const [filterMenu, setFilterMenu] = useState("all");
+  const [filterHeading, setFilterHeading] = useState(() => sessionStorage.getItem("current_heading_id") || "all");
+  const [filterMenu, setFilterMenu] = useState(() => sessionStorage.getItem("current_menu_id") || "all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -216,14 +216,28 @@ export default function WorkTracker() {
     setFolders([]);
   };
 
-  const startNew = () => {
-    const firstHeading = headings[0];
+  const startNew = async () => {
+    const preferredHeading = Number(sessionStorage.getItem("current_heading_id"));
+    const firstHeading =
+      headings.find((h) => Number(h.id) === preferredHeading) || headings[0];
     if (!firstHeading) return;
-    setEditingId(null);
-    setForm({
-      ...emptyForm,
-      main_heading_id: String(firstHeading.id),
-    });
+
+    try {
+      const ms = await getAccessibleMenus(firstHeading.id);
+      setMenus(ms);
+      setFolders([]);
+      setEditingId(null);
+      setForm({
+        ...emptyForm,
+        main_heading_id: String(firstHeading.id),
+        menu_id: sessionStorage.getItem("current_menu_id") &&
+          ms.some((m) => Number(m.id) === Number(sessionStorage.getItem("current_menu_id")))
+          ? String(sessionStorage.getItem("current_menu_id"))
+          : "",
+      });
+    } catch (e) {
+      showAlert("danger", "Error", e.message);
+    }
   };
 
   const onHeadingChange = async (value) => {
