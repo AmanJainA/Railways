@@ -6,11 +6,19 @@ import Footer from "../Footer/Footer";
 import { supabase } from "../../supabase";
 import { getAccessibleHeadings } from "../Utility/dataAccess";
 export default function NRDashboard() {
-  const navigateToMenu = (menuName) => {
-    const slug = menuName.toLowerCase().replace(/\s+/g, "");
+  const [currentHeadingId, setCurrentHeadingId] = useState(
+    Number(sessionStorage.getItem("current_heading_id")) || null
+  );
 
-    // Save selected page
-    sessionStorage.setItem("current_page", slug);
+  const navigateToMenu = (menu) => {
+    if (!menu) return;
+
+    sessionStorage.setItem("current_menu_id", String(menu.id));
+    sessionStorage.setItem("current_menu_name", menu.menuname || "");
+    sessionStorage.setItem(
+      "current_page",
+      (menu.menuname || "").toLowerCase().replace(/[^a-z0-9]+/g, "")
+    );
 
     navigate("/nr/display");
   };
@@ -22,10 +30,47 @@ export default function NRDashboard() {
   });
   const navigate = useNavigate();
   useEffect(() => {
-    loadDashboard();
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const headings = await getAccessibleHeadings();
+
+        if (cancelled) return;
+
+        if (!headings.length) {
+          setCurrentHeadingId(null);
+          sessionStorage.removeItem("current_heading_id");
+          sessionStorage.removeItem("current_heading_name");
+          setData({
+            menuData: [],
+            typeData: [],
+            recentFiles: [],
+            folderData: [],
+          });
+          return;
+        }
+
+        const storedId = Number(sessionStorage.getItem("current_heading_id"));
+        const selected =
+          headings.find((h) => Number(h.id) === storedId) || headings[0];
+
+        setCurrentHeadingId(Number(selected.id));
+        sessionStorage.setItem("current_heading_id", String(selected.id));
+        sessionStorage.setItem("current_heading_name", selected.headingname);
+
+        await loadDashboard(Number(selected.id));
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  async function loadDashboard() {
+  async function loadDashboard(headingId) {
     try {
       // ==========================
       // Fetch Files
@@ -35,7 +80,7 @@ export default function NRDashboard() {
         .select("*")
         .eq("status", 1)
         .not("menuname", "in", '("mydata","Nangia")');
-      if (currentHeadingId) filesQuery = filesQuery.eq("main_heading_id", currentHeadingId);
+      if (headingId) filesQuery = filesQuery.eq("main_heading_id", headingId);
       const { data: files, error } = await filesQuery;
 
       if (error) {
@@ -49,15 +94,18 @@ export default function NRDashboard() {
       const menuMap = {};
 
       files.forEach((item) => {
-        const menu = item.menuname || "Other";
-        menuMap[menu] = (menuMap[menu] || 0) + 1;
+        const menuId = item.menu_id || ("name:" + (item.menuname || "Other"));
+        if (!menuMap[menuId]) {
+          menuMap[menuId] = {
+            id: item.menu_id || null,
+            menuname: item.menuname || "Other",
+            total: 0,
+          };
+        }
+        menuMap[menuId].total += 1;
       });
 
-      const menuData = Object.keys(menuMap).map((key) => ({
-        menuname: key,
-        total: menuMap[key].total,
-      id: menuMap[key].id,
-      }));
+      const menuData = Object.values(menuMap);
 
       // ==========================
       // File Type Count
