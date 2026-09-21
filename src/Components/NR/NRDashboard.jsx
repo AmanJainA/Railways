@@ -55,7 +55,8 @@ export default function NRDashboard() {
 
       const menuData = Object.keys(menuMap).map((key) => ({
         menuname: key,
-        total: menuMap[key],
+        total: menuMap[key].total,
+      id: menuMap[key].id,
       }));
 
       // ==========================
@@ -248,38 +249,11 @@ export default function NRDashboard() {
                 </p>
 
                 <div className="d-flex gap-3 mt-4 flex-wrap">
-                  <button
-                    onClick={() => navigateToMenu("Study Data")}
-                    className="btn btn-sm btn-primary px-4"
-                  >
-                    <i className="ki-duotone ki-book me-1 fs-5">
-                      <span className="path1"></span>
-                      <span className="path2"></span>
-                    </i>
-                    Study Data
-                  </button>
-
-                  <button
-                    onClick={() => navigateToMenu("Meeting")}
-                    className="btn btn-sm btn-light-success px-4"
-                  >
-                    <i className="ki-duotone ki-calendar me-1 fs-5">
-                      <span className="path1"></span>
-                      <span className="path2"></span>
-                    </i>
-                    Meetings
-                  </button>
-
-                  <button
-                    onClick={() => navigateToMenu("Policy")}
-                    className="btn btn-sm btn-light-dark px-4"
-                  >
-                    <i className="ki-duotone ki-shield-tick me-1 fs-5">
-                      <span className="path1"></span>
-                      <span className="path2"></span>
-                    </i>
-                    Policies
-                  </button>
+                  {data.menuData.slice(0, 3).map((menu) => (
+                    <button key={menu.id || menu.menuname} onClick={() => navigateToMenu(menu)} className="btn btn-sm btn-light-primary px-4">
+                      {menu.menuname}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -348,7 +322,7 @@ export default function NRDashboard() {
                 <div className="col-6 col-md-4 col-lg-3" key={i}>
                   <div
                     className="nr-cat-card"
-                    onClick={() => navigateToMenu(menu.menuname)}
+                    onClick={() => navigateToMenu(menu)}
                     style={{ cursor: "pointer" }}
                   >
                     <div className="d-flex justify-content-between align-items-start">
