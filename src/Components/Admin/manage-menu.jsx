@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabase";
-import { getAccessibleHeadings, getAccessibleMenus } from "../Utility/dataAccess";
+import { getAccessibleHeadings } from "../Utility/dataAccess";
 import { AdminTableToolbar, AdminTableFooter, useAdminTable } from "../Utility/AdminTableTools";
 
 const ManageMenu = () => {
@@ -82,17 +82,11 @@ const ManageMenu = () => {
     setEditId(row.id);
     setEditHeadingId(String(row.main_heading_id));
     setEditMenuName(row.menuname || "");
-    try {
-      await getAccessibleMenus(row.main_heading_id);
-    } catch (e) {
-      showAlert("danger", "Error", e.message);
-    }
   };
 
   const changeEditHeading = async (value) => {
     setEditHeadingId(value);
     setEditMenuName("");
-    try { await getAccessibleMenus(value); } catch (e) { showAlert("danger", "Error", e.message); }
   };
 
   const save = async (id) => {
@@ -150,7 +144,7 @@ const ManageMenu = () => {
 
         <div className="card shadow-sm">
           <div className="card-header"><h3 className="card-title fw-bold mb-0">Menus</h3></div>
-          <AdminTableToolbar table={table} headers={["#", "Main Heading", "Menu Name", "Created By"]} getRows={exportRows} filename="Menus"} />
+          <AdminTableToolbar table={table} headers={["#", "Main Heading", "Menu Name", "Created By"]} getRows={exportRows} filename="Menus" />
           <div className="card-body p-0">
             <div className="table-responsive">
               <table className="table table-row-dashed table-hover align-middle fs-7 mb-0">
