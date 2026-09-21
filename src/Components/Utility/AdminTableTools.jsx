@@ -172,7 +172,7 @@ export const AdminTableToolbar = ({
       <div className="position-relative">
         <button type="button" className="btn btn-light-primary" onClick={() => setExportOpen((v) => !v)}>
           <i className="ki-duotone ki-exit-up fs-4 me-2"><span className="path1"></span><span className="path2"></span></i>
-          Export
+          Export Report
         </button>
         {exportOpen && (
           <div className="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg-light-primary fw-semibold py-3 position-absolute end-0 mt-2 show" style={{ zIndex: 20, minWidth: 150 }}>
