@@ -71,6 +71,11 @@ const ManageUploads = () => {
 
       if (err2) throw err2;
 
+      const headingIds = [...new Set((collections || []).map(c => c.main_heading_id).filter(Boolean))];
+      const { data: headingRows, error: headingError } = await supabase
+        .from("main_heading_master").select("id,headingname").in("id", headingIds);
+      if (headingError) throw headingError;
+
       const usernames = uploads
   .map(x => x.uploaded_by)
   .filter(Boolean);
@@ -100,7 +105,7 @@ const merged = uploads.map((upload)=>{
  return {
     ...upload,
     ...(collection || {}),
-    main_heading_name: headings.find(h=>Number(h.id)===Number(collection?.main_heading_id))?.headingname || "",
+    main_heading_name: headingRows.find(h=>Number(h.id)===Number(collection?.main_heading_id))?.headingname || "",
     email:user?.email || ""
  };
 
@@ -134,7 +139,6 @@ const merged = uploads.map((upload)=>{
       return;
     }
 
-    supabase.from("main_heading_master").select("id,headingname").then(({data})=>setHeadings(data||[]));
     loadFiles();
 
     // eslint-disable-next-line
