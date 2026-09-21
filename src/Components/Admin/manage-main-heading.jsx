@@ -84,6 +84,13 @@ const ManageMainHeading = () => {
     }
     if (error) showAlert("danger", "Error", error.message);
     else {
+      if (Number(sessionStorage.getItem("current_heading_id")) === Number(id)) {
+        sessionStorage.removeItem("current_heading_id");
+        sessionStorage.removeItem("current_heading_name");
+        sessionStorage.removeItem("current_menu_id");
+        sessionStorage.removeItem("current_menu_name");
+        sessionStorage.removeItem("current_page");
+      }
       showAlert("success", "Success", "Main Heading deleted.");
       load();
     }
