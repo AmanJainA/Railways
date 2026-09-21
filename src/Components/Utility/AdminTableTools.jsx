@@ -78,8 +78,15 @@ export const exportExcel = (headers, rows, filename) => {
 };
 
 export const exportPdf = (headers, rows, filename) => {
-  const body = [headers, ...rows].map((row) =>
-    row.map((value) => String(value ?? ""))
+  // pdfMake requires every row to have exactly the same number of cells
+  // as the header row. This is especially important for role-dependent
+  // tables where the Action column may be hidden.
+  const columnCount = headers.length;
+  const safeHeaders = headers.slice(0, columnCount).map((value) => String(value ?? ""));
+  const body = [safeHeaders, ...rows].map((row) =>
+    Array.from({ length: columnCount }, (_, index) =>
+      String(row?.[index] ?? "")
+    )
   );
   pdfMake
     .createPdf({
