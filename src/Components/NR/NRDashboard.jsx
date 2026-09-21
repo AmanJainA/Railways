@@ -98,21 +98,42 @@ export default function NRDashboard() {
       // This is intentionally based on menu_master, not datacollection, so
       // a menu still appears even when it currently has zero files.
       // Non-admin users are additionally restricted by user_menu_access.
-      const accessibleMenus = await getAccessibleMenus(headingId);
-      setQuickAccessMenus(
-        (accessibleMenus || []).filter(
-          (menu) => String(menu.menuname || "").trim().toLowerCase() !== "dashboard"
-        )
+      const accessibleMenus = (await getAccessibleMenus(headingId)) || [];
+      const dashboardMenus = accessibleMenus.filter(
+        (menu) => String(menu.menuname || "").trim().toLowerCase() !== "dashboard"
       );
+      setQuickAccessMenus(dashboardMenus);
 
       // ==========================
       // Fetch Files for this Main Heading
       // ==========================
+      // Non-admin users only see dashboard data belonging to menus
+      // they are explicitly allowed to access. Admins see everything.
       let filesQuery = supabase
         .from("datacollection")
         .select("*")
         .eq("status", 1);
-      if (headingId) filesQuery = filesQuery.eq("main_heading_id", headingId);
+
+      if (headingId) {
+        filesQuery = filesQuery.eq("main_heading_id", headingId);
+      }
+
+      if (!isAdminUser()) {
+        const allowedMenuIds = dashboardMenus.map((menu) => Number(menu.id));
+
+        if (!allowedMenuIds.length) {
+          setData({
+            menuData: [],
+            typeData: [],
+            recentFiles: [],
+            folderData: [],
+          });
+          return;
+        }
+
+        filesQuery = filesQuery.in("menu_id", allowedMenuIds);
+      }
+
       const { data: files, error } = await filesQuery;
 
       if (error) {
@@ -403,7 +424,9 @@ export default function NRDashboard() {
             </div>
           </div>
 
-          <div className="d-flex justify-content-between mb-4">
+          {data.menuData?.length > 0 && (
+            <>
+              <div className="d-flex justify-content-between mb-4">
             <h3 className="fw-bold fs-4 mb-0">
               <i className="ki-duotone ki-category fs-2 me-2 text-primary">
                 <span className="path1"></span>
@@ -473,6 +496,10 @@ export default function NRDashboard() {
               );
             })}
           </div>
+
+
+            </>
+          )}
 
           {/* CHARTS */}
           <div className="row g-5 mb-8">
