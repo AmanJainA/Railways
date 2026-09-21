@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../supabase";
+import { getAccessibleHeadings } from "../Utility/dataAccess";
 
 const fileColorsMap = {
   pdf: "danger", doc: "primary", docx: "primary",
@@ -12,6 +13,8 @@ const PendingApprovals = () => {
   const navigate = useNavigate();
   const role = (sessionStorage.getItem("role") || "").toLowerCase();
   const isAdmin = role === "admin";
+  const isSubAdmin = role === "subadmin";
+  const canApprove = isAdmin || isSubAdmin;
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,250 +30,31 @@ const PendingApprovals = () => {
     }
     fetchPending();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [canApprove, isAdmin, navigate]);
 
   const fetchPending = async () => {
     setLoading(true);
 
     try {
-      // Pending files
-      const { data: files, error: fileError } = await supabase
+      // Pending files: Admin sees all; SubAdmin sees only assigned Main Headings.
+      const headings = await getAccessibleHeadings();
+      if (!isAdmin && !headings.length) {
+        setRows([]);
+        setLoading(false);
+        return;
+      }
+
+      let fileQuery = supabase
         .from("datacollection")
         .select("*")
-        .eq("status", 0)
-        .order("uploaded_at", { ascending: false });
+        .eq("status", 0);
 
-      if (fileError) throw fileError;
-
-      // Users
-      const { data: users, error: userError } = await supabase
-        .from("users")
-        .select("username,email");
-
-      if (userError) throw userError;
-
-      // Merge email into each file row
-      const merged = (files || []).map((file) => ({
-        ...file,
-        email:
-          users.find((u) => u.username === file.uploaded_by)?.email || "",
-      }));
-
-      setRows(merged);
-    } catch (err) {
-      showAlert("danger", "Error", err.message);
-      setRows([]);
-    }
-
-    setLoading(false);
-  };
-
-  const showAlert = (type, title, message) => {
-    setAlert({ type, title, message });
-    setTimeout(() => setAlert(null), 4000);
-  };
-
-  const updateStatus = async (id, status, remark = "") => {
-  setBusyId(id);
-
-  try {
-    // Update in Supabase
-    const { error } = await supabase
-      .from("datacollection")
-      .update({
-        status,
-        remark,
-      })
-      .eq("id", id);
-
-    if (error) throw error;
-
-    // Find selected row
-    const row = rows.find((r) => r.id === id);
-
-    // Send Mail
-    if (row?.email) {
-      try {
-        const response = await fetch(
-          "https://samrat.cu.ma/send_status_mail.php",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              email: row.email,
-              username: row.uploaded_by,
-              fileName: row.name,
-              menu: row.menuname,
-              status,
-              remark,
-            }),
-          }
+      if (!isAdmin) {
+        fileQuery = fileQuery.in(
+          "main_heading_id",
+          headings.map((h) => Number(h.id))
         );
-
-        const result = await response.text();
-      } catch (mailError) {
-        console.log(mailError);
       }
-    }
 
-    showAlert(
-      "success",
-      "Success",
-      status === 1
-        ? "File Approved Successfully"
-        : "File Rejected Successfully"
-    );
-
-    setRows((prev) => prev.filter((r) => r.id !== id));
-  } catch (err) {
-    showAlert("danger", "Error", err.message);
-  } finally {
-    setBusyId(null);
-    setRejectId(null);
-    setRejectRemark("");
-  }
-};
-
-  if (!isAdmin) return null;
-
-  return (
-    <div id="kt_body" className="header-fixed header-tablet-and-mobile-fixed aside-fixed">
-      <div className="content d-flex flex-column flex-column-fluid fs-6" id="kt_content">
-        <div className="container-xxl mt-5">
-          {alert && (
-            <div className={`alert alert-${alert.type} mb-5`}>
-              <h4 className="mb-1">{alert.title}</h4>
-              <span>{alert.message}</span>
-            </div>
-          )}
-
-          <div className="card shadow-sm">
-            <div className="card-header d-flex align-items-center justify-content-between">
-              <h3 className="card-title fw-bold mb-0">
-                <i className="ki-duotone ki-check-square fs-2 me-2 text-primary">
-                  <span className="path1"></span>
-                  <span className="path2"></span>
-                </i>
-                Pending File Approvals
-              </h3>
-              <span className="badge badge-light-warning fs-7">{rows.length} Pending</span>
-            </div>
-
-            <div className="card-body p-0">
-              <div className="table-responsive">
-                <table className="table table-row-dashed table-hover align-middle fs-7 mb-0">
-                  <thead>
-                    <tr className="text-muted fw-bold fs-8 text-uppercase gs-0 bg-light">
-                      <th className="ps-5">#</th>
-                      <th>File</th>
-                      <th>Uploaded By</th>
-                      <th>Dept</th>
-                      <th>Menu</th>
-                      <th>Folder</th>
-                      <th>Type</th>
-                      <th>Uploaded At</th>
-                      <th className="pe-5 text-end">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading ? (
-                      <tr><td colSpan="9" className="text-center py-10 text-muted">Loading...</td></tr>
-                    ) : rows.length === 0 ? (
-                      <tr><td colSpan="9" className="text-center py-10 text-muted">No pending files 🎉</td></tr>
-                    ) : (
-                      rows.map((r, i) => {
-                        const ext = (r.type || "").toLowerCase();
-                        const color = fileColorsMap[ext] || "secondary";
-                        return (
-                          <React.Fragment key={r.id}>
-                            <tr>
-                              <td className="ps-5 text-muted">{i + 1}</td>
-                              <td>
-                                <div className="d-flex align-items-center gap-2">
-                                  <span className={`badge badge-light-${color}`}>{ext.toUpperCase()}</span>
-                                  <span className="fw-semibold text-gray-800">{r.name}</span>
-                                </div>
-                              </td>
-                              <td>{r.uploaded_by || "-"}</td>
-                              <td>{r.dept || "-"}</td>
-                              <td><span className="badge bg-light-primary">{r.menuname}</span></td>
-                              <td>{r.folder || "-"}</td>
-                              <td>{(r.type || "").toUpperCase()}</td>
-                              <td>{r.upload_time || "-"}</td>
-                              <td className="pe-5 text-end">
-                                <a
-                                  href={r.source_type === "onedrive_path" ? r.links : supabase.storage.from("documents").getPublicUrl(r.links).data.publicUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="btn btn-sm btn-icon btn-light-primary me-1"
-                                  title={r.source_type === "onedrive_path" ? "Open OneDrive Path" : "View"}
-                                >
-                                  <i className="ki-duotone ki-eye fs-4">
-                                    <span className="path1"></span>
-                                    <span className="path2"></span>
-                                    <span className="path3"></span>
-                                  </i>
-                                </a>
-                                <button
-                                  className="btn btn-sm btn-light-success me-1"
-                                  disabled={busyId === r.id}
-                                  onClick={() => updateStatus(r.id, 1)}
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  className="btn btn-sm btn-light-danger"
-                                  disabled={busyId === r.id}
-                                  onClick={() => setRejectId(rejectId === r.id ? null : r.id)}
-                                >
-                                  Reject
-                                </button>
-                              </td>
-                            </tr>
-
-                            {rejectId === r.id && (
-                              <tr>
-                                <td colSpan="9" className="bg-light-danger">
-                                  <div className="d-flex align-items-center gap-2 p-3">
-                                    <input
-                                      type="text"
-                                      className="form-control form-control-sm"
-                                      placeholder="Reason for rejection (optional)"
-                                      value={rejectRemark}
-                                      onChange={(e) => setRejectRemark(e.target.value)}
-                                    />
-                                    <button
-                                      className="btn btn-sm btn-danger"
-                                      disabled={busyId === r.id}
-                                      onClick={() => updateStatus(r.id, 2, rejectRemark)}
-                                    >
-                                      Confirm Reject
-                                    </button>
-                                    <button
-                                      className="btn btn-sm btn-light"
-                                      onClick={() => { setRejectId(null); setRejectRemark(""); }}
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                          </React.Fragment>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default PendingApprovals;
+      const { data: files, error: fileError } = await fileQuery
+        .order("uploaded_at", { ascending: false });
