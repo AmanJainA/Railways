@@ -202,6 +202,7 @@ const UserProfiles = () => {
             project: "",
         });
         setSelectedHeadingIds([]);
+        setSelectedMenuIds([]);
 
         setShowModal(true);
     };
