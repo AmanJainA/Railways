@@ -1244,22 +1244,45 @@ const UserProfiles = () => {
 
                             </div>
 
-                            {/* TABLE FOOTER */}
+                            {/* TABLE FOOTER / PAGINATION */}
 
-                            <div className="d-flex justify-content-between align-items-center pt-5">
-
-                                <div className="text-muted fs-7">
-                                    Showing{" "}
-                                    <strong>
-                                        {filteredUsers.length}
-                                    </strong>{" "}
-                                    of{" "}
-                                    <strong>
-                                        {users.length}
-                                    </strong>{" "}
-                                    users
+                            <div className="d-flex flex-wrap justify-content-between align-items-center gap-4 pt-5">
+                                <div className="d-flex align-items-center gap-2 text-muted fs-7">
+                                    <span>Showing <strong>{pageStart}</strong> to <strong>{pageEnd}</strong> of <strong>{filteredUsers.length}</strong> users</span>
+                                    <span className="ms-3">Show</span>
+                                    <select
+                                        className="form-select form-select-sm w-auto"
+                                        value={pageSize}
+                                        onChange={(e) => setPageSize(Number(e.target.value))}
+                                    >
+                                        {[10, 20, 50, 100, 500].map((size) => (
+                                            <option key={size} value={size}>{size}</option>
+                                        ))}
+                                    </select>
+                                    <span>rows</span>
                                 </div>
 
+                                <div className="d-flex align-items-center gap-1">
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-light"
+                                        disabled={currentPage <= 1}
+                                        onClick={() => goToPage(currentPage - 1)}
+                                    >
+                                        Previous
+                                    </button>
+                                    <span className="px-3 text-muted fs-7">
+                                        Page {currentPage} of {totalPages}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-light"
+                                        disabled={currentPage >= totalPages}
+                                        onClick={() => goToPage(currentPage + 1)}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
                             </div>
 
                         </div>
