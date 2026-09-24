@@ -200,7 +200,7 @@ const Login = () => {
 
           {/* RIGHT SIDE */}
           <div className="d-flex flex-column flex-lg-row-fluid py-0 py-lg-10 min-vh-100 login-form-section" style={{ marginTop: "0px" }}>
-            <div className="d-flex flex-center flex-column flex-column-fluid login-form-content login-form-content">
+            <div className="d-flex flex-center flex-column flex-column-fluid login-form-content">
               <div className="w-100 w-lg-500px px-4 px-sm-8 px-lg-15 py-2 py-lg-0 mx-auto" style={{ maxWidth: "560px", boxSizing: "border-box" }}>
                 <form className="form w-100" onSubmit={handleSubmit}>
                   <div className="text-center mb-4 mb-lg-10 login-signin-title">
@@ -287,6 +287,14 @@ const Login = () => {
             flex: none !important;
             margin: 0 !important;
             padding: 0 !important;
+          }
+
+          /* Mobile: remove flex-center positioning and add mt-5 spacing */
+          .login-form-section .login-form-content.flex-center {
+            display: flex !important;
+            justify-content: flex-start !important;
+            align-items: stretch !important;
+            margin-top: 1.25rem !important;
           }
 
           .login-form-section .login-form-content > div {
