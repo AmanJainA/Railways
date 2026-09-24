@@ -1,18 +1,18 @@
 {
   "files": {
     "main.css": "/Railways/static/css/main.2351f439.css",
-    "main.js": "/Railways/static/js/main.41f684b2.js",
+    "main.js": "/Railways/static/js/main.6572c578.js",
     "static/js/453.ed672af5.chunk.js": "/Railways/static/js/453.ed672af5.chunk.js",
     "static/media/pdf.worker.min.mjs": "/Railways/static/media/pdf.worker.min.1e697aa97511a89afffa.mjs",
     "static/media/logo-default.svg": "/Railways/static/media/logo-default.104871ae32defc096c21fac311f13a67.svg",
     "static/media/logo-compact.svg": "/Railways/static/media/logo-compact.691a4eb859798e3a154b70335a581da3.svg",
     "index.html": "/Railways/index.html",
     "main.2351f439.css.map": "/Railways/static/css/main.2351f439.css.map",
-    "main.41f684b2.js.map": "/Railways/static/js/main.41f684b2.js.map",
+    "main.6572c578.js.map": "/Railways/static/js/main.6572c578.js.map",
     "453.ed672af5.chunk.js.map": "/Railways/static/js/453.ed672af5.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.2351f439.css",
-    "static/js/main.41f684b2.js"
+    "static/js/main.6572c578.js"
   ]
 }
