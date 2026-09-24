@@ -199,8 +199,8 @@ const Login = () => {
           </div>
 
           {/* RIGHT SIDE */}
-          <div className="d-flex flex-column flex-lg-row-fluid py-3 py-lg-10 min-vh-100 login-form-section" style={{ marginTop: "0px" }}>
-            <div className="d-flex flex-center flex-column flex-column-fluid login-form-content">
+          <div className="d-flex flex-column flex-lg-row-fluid py-0 py-lg-10 min-vh-100 login-form-section" style={{ marginTop: "0px" }}>
+            <div className="d-flex flex-center flex-column flex-column-fluid login-form-content login-form-content">
               <div className="w-100 w-lg-500px px-4 px-sm-8 px-lg-15 py-2 py-lg-0 mx-auto" style={{ maxWidth: "560px", boxSizing: "border-box" }}>
                 <form className="form w-100" onSubmit={handleSubmit}>
                   <div className="text-center mb-4 mb-lg-10 login-signin-title">
@@ -287,6 +287,11 @@ const Login = () => {
             flex: none !important;
             margin: 0 !important;
             padding: 0 !important;
+          }
+
+          .login-form-section .login-form-content > div {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
           }
 
           .login-form-section .login-signin-title {
