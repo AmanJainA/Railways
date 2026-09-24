@@ -442,8 +442,8 @@ export default function WorkTracker({ embedded = false, onClose }) {
 
 
         {embedded && (
-          <div className="card shadow-sm mb-6">
-            <div className="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div className="card shadow-sm mb-6" style={{ overflow: "hidden", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
+            <div className="card-header d-flex flex-wrap justify-content-between align-items-center gap-3" style={{ overflow: "hidden" }}>
               <div className="min-w-0 flex-grow-1" style={{ minWidth: 0 }}>
                 <h3 className="card-title fw-bold mb-1" style={{ whiteSpace: "normal", overflowWrap: "anywhere" }}>Work / Todo</h3>
                 <div className="text-muted fs-7" style={{ whiteSpace: "normal", overflowWrap: "anywhere" }}>Record work for the current Main Heading / Menu and connect related files.</div>
@@ -490,7 +490,7 @@ export default function WorkTracker({ embedded = false, onClose }) {
                         setParentSearch(value);
                         setForm((x) => ({ ...x, parent_id: match ? String(match.id) : "" }));
                       }}
-                      placeholder={formParentOptions.length ? "Search / select parent work" : "No parent work available"}
+                      placeholder={formParentOptions.length ? "Select parent Work / Todo" : "No parent Work / Todo available"}
                       disabled={!formParentOptions.length}
                     />
                     <datalist id="parent-work-todo-options">
