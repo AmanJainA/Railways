@@ -135,6 +135,9 @@ const SidebarLayout = ({ children }) => {
 
     loadNavigation();
 
+    const handleHeadingChange = () => loadNavigation();
+    window.addEventListener("main-heading-changed", handleHeadingChange);
+
     const channel = supabase
       .channel("sidebar-main-heading-sync")
       .on(
@@ -149,6 +152,7 @@ const SidebarLayout = ({ children }) => {
     return () => {
       cancelled = true;
       window.clearInterval(refreshTimer);
+      window.removeEventListener("main-heading-changed", handleHeadingChange);
       supabase.removeChannel(channel);
     };
   }, [isAdmin, currentPath]);
