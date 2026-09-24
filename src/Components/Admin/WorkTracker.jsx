@@ -65,6 +65,8 @@ export default function WorkTracker({ embedded = false, onClose }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState(null);
+  const [fileSearch, setFileSearch] = useState("");
+  const [parentSearch, setParentSearch] = useState("");
 
   const currentUserId = getCurrentUserId();
   const admin = isAdminUser();
@@ -225,6 +227,8 @@ export default function WorkTracker({ embedded = false, onClose }) {
 
   const resetForm = () => {
     setForm(emptyForm);
+    setFileSearch("");
+    setParentSearch("");
     setEditingId(null);
     setMenus([]);
     setFolders([]);
@@ -244,6 +248,8 @@ export default function WorkTracker({ embedded = false, onClose }) {
       const fs = menuId ? await getAccessibleFolders(firstHeading.id, menuId) : [];
       setFolders(fs);
       setEditingId(null);
+      setFileSearch("");
+      setParentSearch("");
       setForm({
         ...emptyForm,
         main_heading_id: String(firstHeading.id),
@@ -296,6 +302,9 @@ export default function WorkTracker({ embedded = false, onClose }) {
     setMenus(ms);
     setFolders(fs);
     setEditingId(item.id);
+    setFileSearch("");
+    const parentItem = item.parent_id ? items.find((x) => Number(x.id) === Number(item.parent_id)) : null;
+    setParentSearch(parentItem?.title || "");
     setForm({
       main_heading_id: String(item.main_heading_id),
       menu_id: String(item.menu_id),
@@ -394,6 +403,13 @@ export default function WorkTracker({ embedded = false, onClose }) {
   // same Main Heading (e.g. Letter + Meeting + Reports).
   const formDocuments = documents
     .filter((d) => Number(d.main_heading_id) === Number(form.main_heading_id))
+    .filter((d) => {
+      const q = fileSearch.trim().toLowerCase();
+      if (!q) return true;
+      return [d.name, d.menuname, d.folder, d.type, d.source_type]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(q));
+    })
     .sort((a, b) => {
       const menuA = (a.menuname || "").localeCompare(b.menuname || "");
       if (menuA !== 0) return menuA;
@@ -405,6 +421,8 @@ export default function WorkTracker({ embedded = false, onClose }) {
     Number(x.menu_id) === Number(form.menu_id) &&
     Number(x.id) !== Number(editingId)
   );
+
+  const selectedParent = formParentOptions.find((x) => Number(x.id) === Number(form.parent_id));
 
   const openDocument = (doc) => {
     if (!doc?.links) return;
@@ -425,12 +443,12 @@ export default function WorkTracker({ embedded = false, onClose }) {
 
         {embedded && (
           <div className="card shadow-sm mb-6">
-            <div className="card-header d-flex justify-content-between align-items-center">
-              <div>
-                <h3 className="card-title fw-bold mb-1">Work / Todo</h3>
-                <div className="text-muted fs-7">Record work for the current Main Heading / Menu and connect related files.</div>
+            <div className="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+              <div className="min-w-0 flex-grow-1" style={{ minWidth: 0 }}>
+                <h3 className="card-title fw-bold mb-1" style={{ whiteSpace: "normal", overflowWrap: "anywhere" }}>Work / Todo</h3>
+                <div className="text-muted fs-7" style={{ whiteSpace: "normal", overflowWrap: "anywhere" }}>Record work for the current Main Heading / Menu and connect related files.</div>
               </div>
-              {onClose && <button type="button" className="btn btn-sm btn-light-danger" onClick={onClose}>Close</button>}
+              {onClose && <button type="button" className="btn btn-sm btn-light-danger flex-shrink-0" onClick={onClose}>Close</button>}
             </div>
             <div className="card-body">
               <form onSubmit={save}>
@@ -461,9 +479,24 @@ export default function WorkTracker({ embedded = false, onClose }) {
                     <input type="text" className="form-control" value={form.title} onChange={(e) => setForm((x) => ({ ...x, title: e.target.value }))} placeholder="e.g. Assignment of IVth" required />
                   </div>
                   <div className="col-md-4"><label className="form-label fw-semibold">Parent Work / Todo</label>
-                    <select className="form-select" value={form.parent_id} onChange={(e) => setForm((x) => ({ ...x, parent_id: e.target.value }))}>
-                      <option value="">None</option>{formParentOptions.map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}
-                    </select>
+                    <input
+                      type="text"
+                      className="form-control"
+                      list="parent-work-todo-options"
+                      value={parentSearch}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const match = formParentOptions.find((x) => x.title === value);
+                        setParentSearch(value);
+                        setForm((x) => ({ ...x, parent_id: match ? String(match.id) : "" }));
+                      }}
+                      placeholder={formParentOptions.length ? "Search / select parent work" : "No parent work available"}
+                      disabled={!formParentOptions.length}
+                    />
+                    <datalist id="parent-work-todo-options">
+                      {formParentOptions.map((x) => <option key={x.id} value={x.title} />)}
+                    </datalist>
+                    {selectedParent && <div className="text-muted fs-7 mt-1">Selected: {selectedParent.title}</div>}
                   </div>
                   <div className="col-12"><label className="form-label fw-semibold">Explanation / Description</label>
                     <textarea className="form-control" rows="4" value={form.description} onChange={(e) => setForm((x) => ({ ...x, description: e.target.value }))} placeholder="Explain the work, action taken, requirement, output, or related note." />
@@ -478,10 +511,20 @@ export default function WorkTracker({ embedded = false, onClose }) {
                     <input type="date" className="form-control" value={form.due_date} onChange={(e) => setForm((x) => ({ ...x, due_date: e.target.value }))} />
                   </div>
                   <div className="col-12">
-                    <div className="d-flex justify-content-between align-items-center mb-2">
+                    <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                       <label className="form-label fw-semibold mb-0">Related Files — Select Multiple</label>
                       <span className="badge badge-light-primary">{form.linked_ids.length} selected</span>
                     </div>
+                    {form.main_heading_id && formDocuments.length > 0 && <div className="mb-3">
+                      <input
+                        type="search"
+                        className="form-control"
+                        value={fileSearch}
+                        onChange={(e) => setFileSearch(e.target.value)}
+                        placeholder="Search related files by file name, menu, folder or type..."
+                        aria-label="Search related files"
+                      />
+                    </div>}
                     {!form.main_heading_id ? <div className="alert alert-light text-muted mb-0">Select a Main Heading to see its files.</div> :
                       formDocuments.length === 0 ? <div className="alert alert-light text-muted mb-0">No active files are available under this Main Heading.</div> :
                       <div className="border rounded p-3" style={{ maxHeight: 300, overflowY: "auto" }}><div className="row g-2">
