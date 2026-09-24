@@ -6,6 +6,7 @@ import { AdminTableToolbar, AdminTableFooter, useAdminTable } from "../Utility/A
 const ManageFolder = () => {
   const username = sessionStorage.getItem("user") || "Unknown";
   const isAdmin = (sessionStorage.getItem("role") || "").toLowerCase() === "admin";
+  const canManage = Boolean(sessionStorage.getItem("user_id"));
   const [headings, setHeadings] = useState([]);
   const [menus, setMenus] = useState([]);
   const [rows, setRows] = useState([]);
@@ -147,7 +148,7 @@ const ManageFolder = () => {
       <div className="container-xxl mt-5">
         {alert && <div className={`alert alert-${alert.type} mb-5`}><h4>{alert.title}</h4><span>{alert.message}</span></div>}
 
-        {isAdmin && (
+        {canManage && (
         <div className="card shadow-sm mb-5">
           <div className="card-header"><h3 className="card-title fw-bold">
             <i className="ki-duotone ki-folder-added fs-2 me-2 text-primary">
@@ -180,7 +181,7 @@ const ManageFolder = () => {
                 <button className="btn btn-primary w-100 mt-3" disabled={saving}>{saving ? "Saving..." : "Add Folder"}</button>
               </div>
             </form>
-            {!isAdmin && <div className="form-text mt-3">You can view folders under your assigned Main Headings. Add/edit/delete controls are available to administrators.</div>}
+            {!isAdmin && <div className="form-text mt-3">You can add and update folders under your assigned Main Headings. Delete is available only to administrators.</div>}
           </div>
         </div>
 
@@ -196,7 +197,7 @@ const ManageFolder = () => {
             <div className="table-responsive">
               <table className="table table-row-dashed table-hover align-middle fs-7 mb-0">
                 <thead><tr className="text-muted fw-bold fs-8 text-uppercase bg-light">
-                  <th className="ps-5">#</th><th>Main Heading</th><th>Menu</th><th>Folder</th><th>Created By</th><th>Created Date</th>{isAdmin && <th className="text-end pe-5">Action</th>}
+                  <th className="ps-5">#</th><th>Main Heading</th><th>Menu</th><th>Folder</th><th>Created By</th><th>Created Date</th>{canManage && <th className="text-end pe-5">Action</th>}
                 </tr></thead>
                 <tbody>
                   {table.visibleRows.map((r, i) => <tr key={r.id}>
@@ -229,7 +230,7 @@ const ManageFolder = () => {
                               : "-"}
                     </td>
                     <td className="text-end pe-5">
-                      {isAdmin && (editId === r.id ? <>
+                      {canManage && (editId === r.id ? <>
                         <button className="btn btn-sm btn-success me-1" onClick={() => save(r.id)} disabled={saving}>Save</button>
                         <button className="btn btn-sm btn-light" onClick={() => setEditId(null)}>Cancel</button>
                       </> : deleteId === r.id ? <>
@@ -241,7 +242,7 @@ const ManageFolder = () => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                   </i></button>
-                        <button className="btn btn-sm btn-icon btn-light-danger" onClick={() => setDeleteId(r.id)} title="Delete"><i className="ki-duotone ki-trash fs-4">
+                        {isAdmin && <button className="btn btn-sm btn-icon btn-light-danger" onClick={() => setDeleteId(r.id)} title="Delete"><i className="ki-duotone ki-trash fs-4">
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                     <span className="path3"></span>
@@ -251,7 +252,7 @@ const ManageFolder = () => {
                       </>)}
                     </td>
                   </tr>)}
-                  {!table.visibleRows.length && <tr><td colSpan={isAdmin ? 7 : 6} className="text-center py-10 text-muted">No folders found for your accessible Main Headings.</td></tr>}
+                  {!table.visibleRows.length && <tr><td colSpan={canManage ? 7 : 6} className="text-center py-10 text-muted">No folders found for your accessible Main Headings.</td></tr>}
                 </tbody>
               </table>
             </div>
