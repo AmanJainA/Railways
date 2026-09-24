@@ -4,7 +4,7 @@ import "./NRDashboard.css";
 import { useLocation, useNavigate } from "react-router-dom";
 import Footer from "../Footer/Footer";
 import { supabase } from "../../supabase";
-import { getAccessibleHeadings, getAccessibleMenus, isAdminUser } from "../Utility/dataAccess";
+import { getAccessibleHeadings, getAccessibleMenus, isAdminUser, setCurrentDataContext } from "../Utility/dataAccess";
 export default function NRDashboard() {
   const location = useLocation();
   const [currentHeadingId, setCurrentHeadingId] = useState(null);
@@ -14,17 +14,14 @@ export default function NRDashboard() {
   const navigateToMenu = (menu) => {
     if (!menu) return;
 
-    sessionStorage.setItem("current_heading_id", String(currentHeadingId));
-    sessionStorage.setItem(
-      "current_heading_name",
-      sessionStorage.getItem("current_heading_name") || ""
-    );
-    sessionStorage.setItem("current_menu_id", String(menu.id));
-    sessionStorage.setItem("current_menu_name", menu.menuname || "");
-    sessionStorage.setItem(
-      "current_page",
-      (menu.menuname || "").toLowerCase().replace(/[^a-z0-9]+/g, "")
-    );
+    // Use the exact same data-context logic as the sidebar menu.
+    const heading = {
+      id: currentHeadingId,
+      headingname:
+        sessionStorage.getItem("current_heading_name") || currentHeadingName || "",
+    };
+
+    setCurrentDataContext(heading, menu);
 
     navigate("/nr/display", {
       state: { menu: menu.menuname || "" },
