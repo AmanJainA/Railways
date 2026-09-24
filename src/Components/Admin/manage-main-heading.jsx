@@ -62,6 +62,7 @@ const ManageMainHeading = () => {
       setName("");
       showAlert("success", "Success", "Main Heading added successfully.");
       await load();
+      window.dispatchEvent(new CustomEvent("main-heading-changed"));
     } catch (e) { showAlert("danger", "Error", e.message); }
     setSaving(false);
   };
@@ -82,6 +83,7 @@ const ManageMainHeading = () => {
         row.headingname + " is now " + (nextStatus === "1" ? "ON" : "OFF") + "."
       );
       await load();
+      window.dispatchEvent(new CustomEvent("main-heading-changed"));
     } catch (e) {
       showAlert("danger", "Error", e.message);
     }
