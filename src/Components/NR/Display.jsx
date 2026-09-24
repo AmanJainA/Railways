@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import $ from "jquery";
 import JSZip from "jszip";
 import pdfMake from "pdfmake/build/pdfmake";
@@ -798,14 +799,50 @@ export default function Display({ page }) {
             </div>
           </div>
         </div>
-          {showWorkTodo && (
-            <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-              style={{ background: "rgba(0,0,0,.45)", zIndex: 1050, overflow: "auto", padding: "16px 12px", boxSizing: "border-box" }}
-              onMouseDown={(e) => { if (e.target === e.currentTarget) setShowWorkTodo(false); }}>
-              <div className="w-100" style={{ maxWidth: 960, width: "100%", maxHeight: "calc(100vh - 32px)", margin: "0 auto", boxSizing: "border-box" }}>
-                <div style={{ width: "100%", margin: "0 auto", boxSizing: "border-box", overflowX: "hidden", maxHeight: "calc(100vh - 32px)", overflowY: "auto", borderRadius: "8px" }}><WorkTracker embedded onClose={() => setShowWorkTodo(false)} /></div>
+          {showWorkTodo && typeof document !== "undefined" && createPortal(
+            <div
+              className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+              style={{
+                background: "rgba(0,0,0,.45)",
+                zIndex: 2000,
+                padding: "16px 12px",
+                boxSizing: "border-box",
+                overflow: "hidden",
+              }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Work / Todo"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget) setShowWorkTodo(false);
+              }}
+            >
+              <div
+                className="w-100"
+                style={{
+                  maxWidth: 960,
+                  width: "100%",
+                  maxHeight: "calc(100vh - 32px)",
+                  margin: "0 auto",
+                  boxSizing: "border-box",
+                  minWidth: 0,
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <div
+                  style={{
+                    width: "100%",
+                    maxHeight: "calc(100vh - 32px)",
+                    overflowY: "auto",
+                    overflowX: "hidden",
+                    boxSizing: "border-box",
+                    borderRadius: "8px",
+                  }}
+                >
+                  <WorkTracker embedded onClose={() => setShowWorkTodo(false)} />
+                </div>
               </div>
-            </div>
+            </div>,
+            document.body
           )}
       </div>
       <Footer />
