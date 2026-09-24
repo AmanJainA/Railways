@@ -199,7 +199,7 @@ const Login = () => {
           </div>
 
           {/* RIGHT SIDE */}
-          <div className="d-flex flex-column flex-lg-row-fluid py-3 py-lg-10 min-vh-100">
+          <div className="d-flex flex-column flex-lg-row-fluid py-3 py-lg-10 min-vh-100 login-form-section">
             <div className="d-flex flex-center flex-column flex-column-fluid">
               <div className="w-100 w-lg-500px px-4 px-sm-8 px-lg-15 py-2 py-lg-0 mx-auto" style={{ maxWidth: "560px", boxSizing: "border-box" }}>
                 <form className="form w-100" onSubmit={handleSubmit}>
