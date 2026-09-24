@@ -453,19 +453,19 @@ export default function WorkTracker({ embedded = false, onClose }) {
             <div className="card-body">
               <form onSubmit={save}>
                 <div className="row g-5">
-                  <div className="col-md-6"><label className="form-label fw-semibold">Main Heading</label>
+                  <div className="col-md-4"><label className="form-label fw-semibold">Main Heading</label>
                     <select className="form-select" value={form.main_heading_id} onChange={(e) => onHeadingChange(e.target.value)} required>
                       <option value="">Select Main Heading</option>
                       {headings.map((h) => <option key={h.id} value={h.id}>{h.headingname}</option>)}
                     </select>
                   </div>
-                  <div className="col-md-6"><label className="form-label fw-semibold">Menu</label>
+                  <div className="col-md-4"><label className="form-label fw-semibold">Menu</label>
                     <select className="form-select" value={form.menu_id} onChange={(e) => onMenuChange(e.target.value)} required>
                       <option value="">Select Menu</option>
                       {menus.filter((m) => !form.main_heading_id || Number(m.main_heading_id) === Number(form.main_heading_id)).map((m) => <option key={m.id} value={m.id}>{m.menuname}</option>)}
                     </select>
                   </div>
-                  <div className="col-md-6"><label className="form-label fw-semibold">Folder</label>
+                  <div className="col-md-4"><label className="form-label fw-semibold">Folder</label>
                     <select className="form-select" value={form.folder_id} onChange={(e) => setForm((x) => ({ ...x, folder_id: e.target.value, parent_id: "" }))}>
                       <option value="">No specific folder</option>{folders.map((f) => <option key={f.id} value={f.id}>{f.foldername}</option>)}
                     </select>
