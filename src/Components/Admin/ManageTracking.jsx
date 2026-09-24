@@ -12,21 +12,29 @@ const ManageTracking = () => {
     { id: "activity", label: "Page Activity", icon: "bi-activity" },
   ];
 
+  const renderDetails = () => {
+    if (activeTab === "online") return <OnlineUsers />;
+    if (activeTab === "login") return <LoginHistory />;
+    return <PageActivity />;
+  };
+
   return (
     <div className="content d-flex flex-column flex-column-fluid fs-6" id="kt_content">
       <div className="container-xxl mt-5">
-        <div className="card card-flush shadow-sm">
-          <div className="card-header border-0 pt-6">
+        <div className="card card-flush shadow-sm mb-5">
+          <div className="card-header border-0 pt-6 pb-2">
             <div className="card-title">
               <div>
                 <h3 className="fw-bold mb-1">Manage Tracking</h3>
-                <div className="text-muted fs-7">Monitor active users, login history and page activity.</div>
+                <div className="text-muted fs-7">
+                  Monitor active users, login history and page activity.
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="card-body pt-0">
-            <ul className="nav nav-tabs nav-line-tabs nav-line-tabs-2x mb-7">
+          <div className="card-body pt-0 pb-0">
+            <ul className="nav nav-tabs nav-line-tabs nav-line-tabs-2x">
               {tabs.map((tab) => (
                 <li className="nav-item" key={tab.id}>
                   <button
@@ -40,10 +48,12 @@ const ManageTracking = () => {
                 </li>
               ))}
             </ul>
+          </div>
+        </div>
 
-            {activeTab === "online" && <OnlineUsers />}
-            {activeTab === "login" && <LoginHistory />}
-            {activeTab === "activity" && <PageActivity />}
+        <div className="card card-flush shadow-sm">
+          <div className="card-body p-0">
+            {renderDetails()}
           </div>
         </div>
       </div>
