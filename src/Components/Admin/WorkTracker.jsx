@@ -50,7 +50,7 @@ const emptyForm = {
   linked_ids: [],
 };
 
-export default function WorkTracker() {
+export default function WorkTracker({ embedded = false, onClose }) {
   const navigate = useNavigate();
   const [headings, setHeadings] = useState([]);
   const [menus, setMenus] = useState([]);
@@ -167,6 +167,7 @@ export default function WorkTracker() {
       setLoading(true);
       await loadBase();
       await loadItems();
+      if (embedded) await startNew();
       setLoading(false);
     })();
     // eslint-disable-next-line
@@ -238,15 +239,16 @@ export default function WorkTracker() {
     try {
       const ms = await getAccessibleMenus(firstHeading.id);
       setMenus(ms);
-      setFolders([]);
+      const preferredMenu = sessionStorage.getItem("current_menu_id");
+      const menuId = preferredMenu && ms.some((m) => Number(m.id) === Number(preferredMenu)) ? String(preferredMenu) : "";
+      const fs = menuId ? await getAccessibleFolders(firstHeading.id, menuId) : [];
+      setFolders(fs);
       setEditingId(null);
       setForm({
         ...emptyForm,
         main_heading_id: String(firstHeading.id),
-        menu_id: sessionStorage.getItem("current_menu_id") &&
-          ms.some((m) => Number(m.id) === Number(sessionStorage.getItem("current_menu_id")))
-          ? String(sessionStorage.getItem("current_menu_id"))
-          : "",
+        menu_id: menuId,
+        folder_id: "",
       });
     } catch (e) {
       showAlert("danger", "Error", e.message);
@@ -420,6 +422,91 @@ export default function WorkTracker() {
           </div>
         )}
 
+
+        {embedded && (
+          <div className="card shadow-sm mb-6">
+            <div className="card-header d-flex justify-content-between align-items-center">
+              <div>
+                <h3 className="card-title fw-bold mb-1">Work / Todo</h3>
+                <div className="text-muted fs-7">Record work for the current Main Heading / Menu and connect related files.</div>
+              </div>
+              {onClose && <button type="button" className="btn btn-sm btn-light-danger" onClick={onClose}>Close</button>}
+            </div>
+            <div className="card-body">
+              <form onSubmit={save}>
+                <div className="row g-5">
+                  <div className="col-md-6"><label className="form-label fw-semibold">Main Heading</label>
+                    <select className="form-select" value={form.main_heading_id} onChange={(e) => onHeadingChange(e.target.value)} required>
+                      <option value="">Select Main Heading</option>
+                      {headings.map((h) => <option key={h.id} value={h.id}>{h.headingname}</option>)}
+                    </select>
+                  </div>
+                  <div className="col-md-6"><label className="form-label fw-semibold">Menu</label>
+                    <select className="form-select" value={form.menu_id} onChange={(e) => onMenuChange(e.target.value)} required>
+                      <option value="">Select Menu</option>
+                      {menus.filter((m) => !form.main_heading_id || Number(m.main_heading_id) === Number(form.main_heading_id)).map((m) => <option key={m.id} value={m.id}>{m.menuname}</option>)}
+                    </select>
+                  </div>
+                  <div className="col-md-6"><label className="form-label fw-semibold">Folder</label>
+                    <select className="form-select" value={form.folder_id} onChange={(e) => setForm((x) => ({ ...x, folder_id: e.target.value, parent_id: "" }))}>
+                      <option value="">No specific folder</option>{folders.map((f) => <option key={f.id} value={f.id}>{f.foldername}</option>)}
+                    </select>
+                  </div>
+                  <div className="col-md-6"><label className="form-label fw-semibold">Work Type</label>
+                    <select className="form-select" value={form.work_type} onChange={(e) => setForm((x) => ({ ...x, work_type: e.target.value }))}>
+                      {WORK_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                    </select>
+                  </div>
+                  <div className="col-md-8"><label className="form-label fw-semibold">Work / Todo</label>
+                    <input type="text" className="form-control" value={form.title} onChange={(e) => setForm((x) => ({ ...x, title: e.target.value }))} placeholder="e.g. Assignment of IVth" required />
+                  </div>
+                  <div className="col-md-4"><label className="form-label fw-semibold">Parent Work / Todo</label>
+                    <select className="form-select" value={form.parent_id} onChange={(e) => setForm((x) => ({ ...x, parent_id: e.target.value }))}>
+                      <option value="">None</option>{formParentOptions.map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}
+                    </select>
+                  </div>
+                  <div className="col-12"><label className="form-label fw-semibold">Explanation / Description</label>
+                    <textarea className="form-control" rows="4" value={form.description} onChange={(e) => setForm((x) => ({ ...x, description: e.target.value }))} placeholder="Explain the work, action taken, requirement, output, or related note." />
+                  </div>
+                  <div className="col-md-4"><label className="form-label fw-semibold">Status</label>
+                    <select className="form-select" value={form.status} onChange={(e) => setForm((x) => ({ ...x, status: e.target.value }))}>{Object.entries(STATUS).map(([value, x]) => <option key={value} value={value}>{x.label}</option>)}</select>
+                  </div>
+                  <div className="col-md-4"><label className="form-label fw-semibold">Priority</label>
+                    <select className="form-select" value={form.priority} onChange={(e) => setForm((x) => ({ ...x, priority: e.target.value }))}>{Object.entries(PRIORITY).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+                  </div>
+                  <div className="col-md-4"><label className="form-label fw-semibold">Due Date</label>
+                    <input type="date" className="form-control" value={form.due_date} onChange={(e) => setForm((x) => ({ ...x, due_date: e.target.value }))} />
+                  </div>
+                  <div className="col-12">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <label className="form-label fw-semibold mb-0">Related Files — Select Multiple</label>
+                      <span className="badge badge-light-primary">{form.linked_ids.length} selected</span>
+                    </div>
+                    {!form.main_heading_id ? <div className="alert alert-light text-muted mb-0">Select a Main Heading to see its files.</div> :
+                      formDocuments.length === 0 ? <div className="alert alert-light text-muted mb-0">No active files are available under this Main Heading.</div> :
+                      <div className="border rounded p-3" style={{ maxHeight: 300, overflowY: "auto" }}><div className="row g-2">
+                        {formDocuments.map((doc) => {
+                          const checked = form.linked_ids.includes(Number(doc.id));
+                          return <div className="col-md-6" key={doc.id}>
+                            <label className="d-flex align-items-start gap-2 p-3 border rounded cursor-pointer h-100">
+                              <input className="form-check-input mt-1" type="checkbox" checked={checked}
+                                onChange={(e) => setForm((x) => ({ ...x, linked_ids: e.target.checked ? [...new Set([...x.linked_ids, Number(doc.id)])] : x.linked_ids.filter((id) => Number(id) !== Number(doc.id)) }))} />
+                              <span><span className="fw-semibold d-block">{doc.name}</span><span className="text-muted fs-7">{doc.menuname || "Menu"}{doc.folder ? " • " + doc.folder : ""}</span></span>
+                            </label>
+                          </div>;
+                        })}
+                      </div></div>}
+                    <div className="text-muted fs-7 mt-2">Files from different menus under the same Main Heading can be selected together.</div>
+                  </div>
+                </div>
+                <div className="d-flex justify-content-end gap-2 mt-6">
+                  <button type="button" className="btn btn-light" onClick={() => { resetForm(); startNew(); }}>Clear</button>
+                  <button type="submit" className="btn btn-success" disabled={saving}>{saving ? "Saving..." : (editingId ? "Update Work / Todo" : "Submit Work / Todo")}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
         <div className="card shadow-sm">
           <div className="card-header">
             <div className="w-100">
