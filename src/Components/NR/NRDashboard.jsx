@@ -744,7 +744,7 @@ export default function NRDashboard() {
                                       <span className="path2"></span>
                                       <span className="path3"></span>
                                     </i>
-                                  </a>
+                                  </button>
                                 </td>
                               </tr>
                             );
