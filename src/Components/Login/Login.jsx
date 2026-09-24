@@ -200,7 +200,7 @@ const Login = () => {
 
           {/* RIGHT SIDE */}
           <div className="d-flex flex-column flex-lg-row-fluid py-3 py-lg-10 min-vh-100 login-form-section" style={{ marginTop: "0px" }}>
-            <div className="d-flex flex-center flex-column flex-column-fluid">
+            <div className="d-flex flex-center flex-column flex-column-fluid login-form-content">
               <div className="w-100 w-lg-500px px-4 px-sm-8 px-lg-15 py-2 py-lg-0 mx-auto" style={{ maxWidth: "560px", boxSizing: "border-box" }}>
                 <form className="form w-100" onSubmit={handleSubmit}>
                   <div className="text-center mb-4 mb-lg-10 login-signin-title">
@@ -270,4 +270,14 @@ const Login = () => {
   );
 };
 
+      <style>{`
+        @media (max-width: 991.98px) {
+          .login-form-section .login-form-content {
+            justify-content: initial !important;
+          }
+          .login-form-section .login-signin-title {
+            margin-top: 10px !important;
+          }
+        }
+      `}</style>
 export default Login;
