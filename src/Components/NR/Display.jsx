@@ -803,7 +803,7 @@ export default function Display({ page }) {
               style={{ background: "rgba(0,0,0,.45)", zIndex: 1050, overflowY: "auto", padding: "40px 20px" }}
               onMouseDown={(e) => { if (e.target === e.currentTarget) setShowWorkTodo(false); }}>
               <div className="w-100" style={{ maxWidth: 1200 }}>
-                <WorkTracker embedded onClose={() => setShowWorkTodo(false)} />
+                <div style={{ width: "100%", maxWidth: 900, margin: "0 auto", boxSizing: "border-box", overflowX: "hidden" }}><WorkTracker embedded onClose={() => setShowWorkTodo(false)} /></div>
               </div>
             </div>
           )}
