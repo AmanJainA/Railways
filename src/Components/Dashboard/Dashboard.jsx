@@ -4,6 +4,7 @@ import "./Dashboard.css";
 import Footer from "../Footer/Footer";
 import { useNavigate } from "react-router-dom";
 import DashboardCard from "./DashboardCard";
+import OnlineUsers from "../Admin/OnlineUsers";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -152,6 +153,7 @@ const Dashboard = () => {
       id="kt_content"
     >
       <div className="container-xxl" id="kt_content_container">
+        <OnlineUsers />
         <div className="row gy-5 gx-xl-10">
           <div className="col-xl-12">
             <div className="row g-5 mb-8">
