@@ -799,11 +799,11 @@ export default function Display({ page }) {
           </div>
         </div>
           {showWorkTodo && (
-            <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-start justify-content-center"
+            <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
               style={{ background: "rgba(0,0,0,.45)", zIndex: 1050, overflowY: "auto", padding: "40px 20px" }}
               onMouseDown={(e) => { if (e.target === e.currentTarget) setShowWorkTodo(false); }}>
               <div className="w-100" style={{ maxWidth: 1200 }}>
-                <div style={{ width: "100%", maxWidth: 900, margin: "0 auto", boxSizing: "border-box", overflowX: "hidden" }}><WorkTracker embedded onClose={() => setShowWorkTodo(false)} /></div>
+                <div style={{ width: "100%", maxWidth: 960, width: "100%", margin: "0 auto", boxSizing: "border-box", overflowX: "hidden" }}><WorkTracker embedded onClose={() => setShowWorkTodo(false)} /></div>
               </div>
             </div>
           )}
