@@ -181,21 +181,24 @@ export default function NRDashboard() {
       const folderMap = {};
 
       files.forEach((item) => {
-        const folder = item.menuname || "Others";
+        const folderName = String(item.menuname || "Others").trim();
+        const folderKey = item.menu_id
+          ? String(item.menu_id)
+          : `name:${folderName.toLowerCase()}`;
 
-        if (!folderMap[folder]) {
-          folderMap[folder] = 0;
+        if (!folderMap[folderKey]) {
+          folderMap[folderKey] = {
+            menuId: item.menu_id ? Number(item.menu_id) : null,
+            menuname: folderName,
+            total: 0,
+          };
         }
 
-        folderMap[folder]++;
+        folderMap[folderKey].total += 1;
       });
 
-      const folderData = Object.keys(folderMap).map((key) => ({
-        menuname: key,
-        total: folderMap[key],
-      }));
+      const folderData = Object.values(folderMap);
 
-      // ==========================
       // Recent Files
       // ==========================
       const recentFiles = [...files].sort((a, b) => b.id - a.id).slice(0, 10);
@@ -581,11 +584,18 @@ export default function NRDashboard() {
                         key={i}
                         className="d-flex align-items-center mb-4"
                         onClick={() => {
-                          const menu = quickAccessMenus.find(
-                            (m) =>
-                              String(m.menuname || "").trim().toLowerCase() ===
-                              String(f.menuname || "").trim().toLowerCase(),
-                          );
+                          // Use the exact menu_id from datacollection first,
+                          // then fall back to the exact menu name.
+                          const menu =
+                            quickAccessMenus.find(
+                              (m) => Number(m.id) === Number(f.menuId),
+                            ) ||
+                            quickAccessMenus.find(
+                              (m) =>
+                                String(m.menuname || "").trim().toLowerCase() ===
+                                String(f.menuname || "").trim().toLowerCase(),
+                            );
+
                           if (menu) navigateToMenu(menu);
                         }}
                         style={{ cursor: "pointer" }}
@@ -594,12 +604,19 @@ export default function NRDashboard() {
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
-                            const menu = quickAccessMenus.find(
-                              (m) =>
-                                String(m.menuname || "").trim().toLowerCase() ===
-                                String(f.menuname || "").trim().toLowerCase(),
-                            );
-                            if (menu) navigateToMenu(menu);
+                            const menu =
+                              quickAccessMenus.find(
+                                (m) => Number(m.id) === Number(f.menuId),
+                              ) ||
+                              quickAccessMenus.find(
+                                (m) =>
+                                  String(m.menuname || "").trim().toLowerCase() ===
+                                  String(f.menuname || "").trim().toLowerCase(),
+                              );
+
+                            if (menu) {
+                              navigateToMenu(menu);
+                            }
                           }
                         }}
                         title="Open folder"
