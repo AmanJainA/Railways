@@ -507,7 +507,7 @@ export default function WorkTracker({ embedded = false, onClose }) {
             </div>
           </div>
         )}
-        <div className="card shadow-sm">
+        {!embedded && <div className="card shadow-sm">
           <div className="card-header">
             <div className="w-100">
               <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
@@ -595,7 +595,7 @@ export default function WorkTracker({ embedded = false, onClose }) {
               </div>
             )}
           </div>
-        </div>
+        </div>}
 
 
       </div>
