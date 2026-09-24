@@ -340,7 +340,7 @@ const Dashboard = () => {
                         {data.stats?.totalFolders || 0} folders •{" "}
                         {data.stats?.totalFiles || 0} visits
                       </span>
-                    </div>
+                    </h3>
 
                     <div className="card-toolbar">
                       <button
