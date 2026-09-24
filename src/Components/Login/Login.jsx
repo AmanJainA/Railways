@@ -272,6 +272,9 @@ const Login = () => {
 
       <style>{`
         @media (max-width: 991.98px) {
+          .login-form-section .flex-center {
+            justify-content: flex-start !important;
+          }
           .login-form-section .login-form-content {
             justify-content: initial !important;
           }
