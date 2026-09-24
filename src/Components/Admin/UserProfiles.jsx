@@ -15,6 +15,10 @@ const UserProfiles = () => {
     const [search, setSearch] = useState("");
     const [roleFilter, setRoleFilter] = useState("all");
 
+    // Pagination
+    const [pageSize, setPageSize] = useState(10);
+    const [currentPage, setCurrentPage] = useState(1);
+
     // Modal
     const [showModal, setShowModal] = useState(false);
     const [editId, setEditId] = useState(null);
@@ -197,6 +201,31 @@ const UserProfiles = () => {
             return matchesSearch && matchesRole;
         });
     }, [users, search, roleFilter]);
+
+    // Keep the current page valid when filtering or changing page size.
+    const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, roleFilter, pageSize]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
+
+    const paginatedUsers = useMemo(() => {
+        const startIndex = (currentPage - 1) * pageSize;
+        return filteredUsers.slice(startIndex, startIndex + pageSize);
+    }, [filteredUsers, currentPage, pageSize]);
+
+    const pageStart = filteredUsers.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const pageEnd = Math.min(currentPage * pageSize, filteredUsers.length);
+
+    const goToPage = (page) => {
+        setCurrentPage(Math.min(Math.max(page, 1), totalPages));
+    };
 
     // =========================================================
     // OPEN ADD MODAL
@@ -1032,14 +1061,14 @@ const UserProfiles = () => {
                                                 </td>
                                             </tr>
                                         ) : (
-                                            filteredUsers.map((user, index) => (
+                                            paginatedUsers.map((user, index) => (
 
                                                 <tr key={user.id}>
 
                                                     {/* INDEX */}
 
                                                     <td className="text-gray-500">
-                                                        {index + 1}
+                                                        {(currentPage - 1) * pageSize + index + 1}
                                                     </td>
 
                                                     {/* USER */}
@@ -1593,6 +1622,90 @@ const UserProfiles = () => {
                             </form>
 
                         </div>
+
+                        {/* PAGINATION */}
+                        {!loading && filteredUsers.length > 0 && (
+                            <div className="d-flex flex-column flex-md-row align-items-center justify-content-between px-9 pb-6 pt-4 gap-4">
+                                <div className="text-muted fs-7">
+                                    Showing <span className="fw-bold text-gray-700">{pageStart}</span> to{" "}
+                                    <span className="fw-bold text-gray-700">{pageEnd}</span> of{" "}
+                                    <span className="fw-bold text-gray-700">{filteredUsers.length}</span> users
+                                </div>
+
+                                <div className="d-flex align-items-center gap-3">
+                                    <div className="d-flex align-items-center">
+                                        <label className="text-muted fs-7 me-2 mb-0">Rows per page:</label>
+                                        <select
+                                            className="form-select form-select-sm form-select-solid"
+                                            style={{ width: "90px" }}
+                                            value={pageSize}
+                                            onChange={(e) => setPageSize(Number(e.target.value))}
+                                            aria-label="Rows per page"
+                                        >
+                                            <option value="10">10</option>
+                                            <option value="20">20</option>
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                            <option value="500">500</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="d-flex align-items-center gap-1">
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm btn-icon btn-light"
+                                            disabled={currentPage === 1}
+                                            onClick={() => goToPage(currentPage - 1)}
+                                            title="Previous page"
+                                        >
+                                            <i className="ki-duotone ki-left fs-4">
+                                                <span className="path1"></span>
+                                                <span className="path2"></span>
+                                            </i>
+                                        </button>
+
+                                        {Array.from({ length: totalPages }, (_, index) => index + 1)
+                                            .filter((page) =>
+                                                page === 1 ||
+                                                page === totalPages ||
+                                                Math.abs(page - currentPage) <= 1
+                                            )
+                                            .map((page, index, visiblePages) => {
+                                                const previousPage = visiblePages[index - 1];
+                                                const showEllipsis = previousPage && page - previousPage > 1;
+
+                                                return (
+                                                    <React.Fragment key={page}>
+                                                        {showEllipsis && (
+                                                            <span className="px-2 text-muted">...</span>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            className={`btn btn-sm ${currentPage === page ? "btn-primary" : "btn-light"}`}
+                                                            onClick={() => goToPage(page)}
+                                                        >
+                                                            {page}
+                                                        </button>
+                                                    </React.Fragment>
+                                                );
+                                            })}
+
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm btn-icon btn-light"
+                                            disabled={currentPage === totalPages}
+                                            onClick={() => goToPage(currentPage + 1)}
+                                            title="Next page"
+                                        >
+                                            <i className="ki-duotone ki-right fs-4">
+                                                <span className="path1"></span>
+                                                <span className="path2"></span>
+                                            </i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                     </div>
 
