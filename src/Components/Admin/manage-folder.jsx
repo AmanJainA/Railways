@@ -248,7 +248,7 @@ const ManageFolder = () => {
                                     <span className="path3"></span>
                                     <span className="path4"></span>
                                     <span className="path5"></span>
-                                  </i></button>
+                                  </i></button>}
                       </>)}
                     </td>
                   </tr>)}
