@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Login from "./Components/Login/Login";
@@ -53,7 +53,7 @@ function App() {
     }
   }, []);
 
-  const basename = process.env.NODE_ENV === "production" ? "/Railways" : "/Railways";
+  const basename = "/Railways";
 
   return (
     <BrowserRouter basename={basename} future={{
@@ -77,6 +77,7 @@ function App() {
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/mydata" element={<MyData />} />
                   <Route path="/nangia" element={<Nangia />} />
+                  <Route path="/nr" element={<Navigate to="/nr/dashboard" replace />} />
                   <Route path="/nr/dashboard" element={<NRDashboard/>}/>
                   <Route path="/nr/display" element={<DisplayWrapper />} />
                   <Route path="/changepassword" element={<ChangePassword />} />
