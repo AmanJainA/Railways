@@ -17,6 +17,7 @@ const pageTitles = {
   "/managemenu": "Manage Menu",
   "/pageactivity": "Page Activity",
   "/loginhistory": "Login History",
+  "/managetracking": "Manage Tracking",
   "/userprofiles": "User Profiles",
   "/uploadfile": "Upload Files",
   "/nr/dashboard": "Data Dashboard",
@@ -108,30 +109,48 @@ const SidebarLayout = ({ children }) => {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+
+    const loadNavigation = async () => {
       try {
         const hs = await getAccessibleHeadings();
         if (cancelled) return;
         setHeadings(hs);
+
         const pairs = await Promise.all(
           hs.map(async (h) => [h.id, await getAccessibleMenus(h.id)])
         );
         if (cancelled) return;
         setHeadingMenus(Object.fromEntries(pairs));
+
         const currentHeadingId = Number(sessionStorage.getItem("current_heading_id"));
         setOpenHeadings(
           Object.fromEntries(
-            hs.map((h) => [
-              h.id,
-              Number(h.id) === currentHeadingId,
-            ])
+            hs.map((h) => [h.id, Number(h.id) === currentHeadingId])
           )
         );
       } catch (e) {
         console.error("Unable to load data navigation", e);
       }
-    })();
-    return () => { cancelled = true; };
+    };
+
+    loadNavigation();
+
+    const channel = supabase
+      .channel("sidebar-main-heading-sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "main_heading_master" },
+        () => loadNavigation()
+      )
+      .subscribe();
+
+    const refreshTimer = window.setInterval(loadNavigation, 10000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(refreshTimer);
+      supabase.removeChannel(channel);
+    };
   }, [isAdmin, currentPath]);
   // Sync NR accordion when route changes
   useEffect(() => {
@@ -504,16 +523,15 @@ const SidebarLayout = ({ children }) => {
                     {isAdmin && (
                       <div className="menu-item">
                         <Link
-                          className={`menu-link${currentPath === "/loginhistory" ? " active" : ""}`}
-                          to="/loginhistory"
+                          className={`menu-link${currentPath === "/managetracking" ? " active" : ""}`}
+                          to="/managetracking"
                         >
                           <span className="menu-icon">
-                            <i className="ki-duotone ki-time fs-2">
-                              <span className="path1"></span>
-                              <span className="path2"></span>
+                            <i className="ki-duotone ki-chart-simple-2 fs-2">
+                              <span className="path1"></span><span className="path2"></span><span className="path3"></span><span className="path4"></span>
                             </i>
                           </span>
-                          <span className="menu-title">Login History</span>
+                          <span className="menu-title">Manage Tracking</span>
                         </Link>
                       </div>
                     )}
@@ -525,35 +543,13 @@ const SidebarLayout = ({ children }) => {
                         >
                           <span className="menu-icon">
                             <i className="ki-duotone ki-profile-user fs-2">
-                              <span className="path1"></span>
-                              <span className="path2"></span>
-                              <span className="path3"></span>
-                              <span className="path4"></span>
+                              <span className="path1"></span><span className="path2"></span><span className="path3"></span><span className="path4"></span>
                             </i>
                           </span>
                           <span className="menu-title">User Profiles</span>
                         </Link>
                       </div>
                     )}
-                    {isAdmin && (
-                      <div className="menu-item">
-                        <Link
-                          className={`menu-link${currentPath === "/pageactivity" ? " active" : ""}`}
-                          to="/pageactivity"
-                        >
-                          <span className="menu-icon">
-                            <i className="ki-duotone ki-chart-simple-2 fs-2">
-                              <span className="path1"></span>
-                              <span className="path2"></span>
-                              <span className="path3"></span>
-                              <span className="path4"></span>
-                            </i>
-                          </span>
-                          <span className="menu-title">Page Activity</span>
-                        </Link>
-                      </div>
-                    )}
-
                     {/* Pending Approvals - ADMIN + SUBADMIN */}
                     {(isAdmin || isSubAdmin) && (
                       <div className="menu-item">
