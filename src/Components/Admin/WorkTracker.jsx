@@ -479,23 +479,32 @@ export default function WorkTracker({ embedded = false, onClose }) {
                     <input type="text" className="form-control" value={form.title} onChange={(e) => setForm((x) => ({ ...x, title: e.target.value }))} placeholder="e.g. Assignment of IVth" required />
                   </div>
                   <div className="col-md-4"><label className="form-label fw-semibold">Parent Work / Todo</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      list="parent-work-todo-options"
-                      value={parentSearch}
+                    <select
+                      className="form-select"
+                      value={form.parent_id}
                       onChange={(e) => {
                         const value = e.target.value;
-                        const match = formParentOptions.find((x) => x.title === value);
-                        setParentSearch(value);
-                        setForm((x) => ({ ...x, parent_id: match ? String(match.id) : "" }));
+                        const match = formParentOptions.find((x) => Number(x.id) === Number(value));
+                        setForm((x) => ({
+                          ...x,
+                          parent_id: value,
+                        }));
+                        setParentSearch(match?.title || "");
                       }}
-                      placeholder={formParentOptions.length ? "Select parent Work / Todo" : "No parent Work / Todo available"}
                       disabled={!formParentOptions.length}
-                    />
-                    <datalist id="parent-work-todo-options">
-                      {formParentOptions.map((x) => <option key={x.id} value={x.title} />)}
-                    </datalist>
+                    >
+                      <option value="">
+                        {formParentOptions.length ? "No Parent (Top-level Work / Todo)" : "No parent Work / Todo available"}
+                      </option>
+                      {formParentOptions.map((x) => (
+                        <option key={x.id} value={x.id}>
+                          {WORK_TYPES.find((w) => w[0] === x.work_type)?.[1] || x.work_type} — {x.title}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="text-muted fs-7 mt-1">
+                      Select an existing Work / Todo that this item belongs under.
+                    </div>
                     {selectedParent && <div className="text-muted fs-7 mt-1">Selected: {selectedParent.title}</div>}
                   </div>
                   <div className="col-12"><label className="form-label fw-semibold">Explanation / Description</label>
