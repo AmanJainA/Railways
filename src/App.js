@@ -21,6 +21,7 @@ import ManageFolder from "./Components/Admin/manage-folder";
 import ManageMenu from "./Components/Admin/manage-menu";
 import UserProfiles from "./Components/Admin/UserProfiles";
 import PageActivity from "./Components/Admin/PageActivity";
+import ManageTracking from "./Components/Admin/ManageTracking";
 import LoginHistory from "./Components/Admin/LoginHistory";
 import ManageMainHeading from "./Components/Admin/manage-main-heading";
 import WorkTracker from "./Components/Admin/WorkTracker";
@@ -87,6 +88,7 @@ function App() {
                   <Route path="/managemenu" element={<ManageMenu />} />
                   <Route path="/userprofiles" element={<UserProfiles />} />
                   <Route path="/pageactivity" element={<PageActivity />} />
+                  <Route path="/managetracking" element={<ManageTracking />} />
                   <Route path="/loginhistory" element={<LoginHistory />} />
                   <Route path="/worktracker" element={<WorkTracker />} />
                 </Routes>
