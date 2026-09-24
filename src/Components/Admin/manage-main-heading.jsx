@@ -39,7 +39,13 @@ const ManageMainHeading = () => {
 
   const table = useAdminTable(rows, ["headingname", "created_by", "status"]);
   const exportRows = useMemo(() => (items) =>
-    items.map((r, i) => [i + 1, r.headingname || "", r.created_by || "", r.created_at ? new Date(r.created_at).toLocaleString("en-IN") : ""]),
+    items.map((r, i) => [
+      i + 1,
+      r.headingname || "",
+      String(r.status) === "1" ? "ON" : "OFF",
+      r.created_by || "",
+      r.created_at ? new Date(r.created_at).toLocaleString("en-IN") : "",
+    ]),
     []);
 
   const add = async (e) => {
@@ -143,7 +149,7 @@ const ManageMainHeading = () => {
             <span className="badge badge-light-primary fs-7">
               {rows.length} Total
             </span></div>
-          <AdminTableToolbar table={table} headers={["#", "Main Heading", "Created By", "Created"]} getRows={exportRows} filename="Main_Headings" />
+          <AdminTableToolbar table={table} headers={["#", "Main Heading", "Status", "Created By", "Created"]} getRows={exportRows} filename="Main_Headings" />
           <div className="card-body p-0">
             <div className="table-responsive">
               <table className="table table-row-dashed table-hover align-middle fs-7 mb-0">
