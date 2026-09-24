@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../supabase";
 import "./Dashboard.css";
-import Footer from "../Footer/Footer";
 import { useNavigate } from "react-router-dom";
 import DashboardCard from "./DashboardCard";
+import { setCurrentDataContext } from "../Utility/dataAccess";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -24,15 +24,89 @@ const Dashboard = () => {
   useEffect(() => {
     fetchData();
   }, []);
-  const handleOpen = (menu) => {
-    const slug = menu
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "")
-      .replace(/[_-]/g, "");
 
-    sessionStorage.setItem("current_page", slug);
-    navigate("/nr/display");
+  const handleOpen = async (menu) => {
+    if (!menu) return;
+
+    try {
+      // Resolve the exact menu and main heading from the same IDs that
+      // created the Latest Folder entry. Never navigate using only a slug.
+      let exactMenu = null;
+      let heading = null;
+
+      if (menu.menu_id) {
+        const { data: menuRecord, error: menuError } = await supabase
+          .from("menu_master")
+          .select("*")
+          .eq("id", Number(menu.menu_id))
+          .maybeSingle();
+
+        if (menuError) throw menuError;
+        exactMenu = menuRecord || null;
+      }
+
+      if (menu.main_heading_id) {
+        const { data: headingRecord, error: headingError } = await supabase
+          .from("main_heading_master")
+          .select("*")
+          .eq("id", Number(menu.main_heading_id))
+          .maybeSingle();
+
+        if (headingError) throw headingError;
+        heading = headingRecord || null;
+      }
+
+      // Fallback only for old records where IDs are unavailable.
+      if (!exactMenu) {
+        const { data: menuRecord, error: menuError } = await supabase
+          .from("menu_master")
+          .select("*")
+          .ilike("menuname", menu.name.trim())
+          .maybeSingle();
+
+        if (menuError) throw menuError;
+        exactMenu = menuRecord || null;
+      }
+
+      if (!heading && exactMenu?.main_heading_id) {
+        const { data: headingRecord, error: headingError } = await supabase
+          .from("main_heading_master")
+          .select("*")
+          .eq("id", Number(exactMenu.main_heading_id))
+          .maybeSingle();
+
+        if (headingError) throw headingError;
+        heading = headingRecord || null;
+      }
+
+      if (!exactMenu) {
+        console.error("Unable to resolve dashboard folder menu:", menu);
+        return;
+      }
+
+      if (!heading) {
+        heading = {
+          id: exactMenu.main_heading_id,
+          headingname:
+            sessionStorage.getItem("current_heading_name") || "NR Data",
+        };
+      }
+
+      // Same context used by the Sidebar menu.
+      setCurrentDataContext(heading, exactMenu);
+
+      // Pass the exact menu to Display as well, so the selected folder
+      // cannot fall back to /nr/dashboard or another menu.
+      navigate("/nr/display", {
+        state: {
+          menu: exactMenu.menuname,
+          menuId: exactMenu.id,
+          headingId: heading.id,
+        },
+      });
+    } catch (error) {
+      console.error("Unable to open dashboard folder:", error);
+    }
   };
 
   const formatName = (name) => {
@@ -41,6 +115,7 @@ const Dashboard = () => {
       .replace(/([a-z])([A-Z])/g, "$1 $2")
       .replace(/\b\w/g, (c) => c.toUpperCase());
   };
+
   const fetchData = async () => {
     try {
       // Fetch all files
@@ -55,9 +130,7 @@ const Dashboard = () => {
       // -----------------------
 
       const myData = files.filter((item) => item.menuname === "mydata").length;
-
       const nangia = files.filter((item) => item.menuname === "Nangia").length;
-
       const nrData = files.length - myData - nangia;
 
       // -----------------------
@@ -71,20 +144,31 @@ const Dashboard = () => {
 
         if (!title) return;
 
-        const slug = title
-          .toLowerCase()
-          .replace(/\s+/g, "")
-          .replace(/[_-]/g, "");
+        // menu_id is the primary identity. This prevents folders with the
+        // same name under different headings from being mixed together.
+        const menuId = item.menu_id ? Number(item.menu_id) : null;
+        const headingId = item.main_heading_id
+          ? Number(item.main_heading_id)
+          : null;
 
-        if (!menuMap[slug]) {
-          menuMap[slug] = {
+        const key = menuId
+          ? String(menuId)
+          : `name:${headingId || "none"}:${title.toLowerCase()}`;
+
+        if (!menuMap[key]) {
+          menuMap[key] = {
             name: title,
-            slug,
+            slug: title
+              .toLowerCase()
+              .replace(/\s+/g, "")
+              .replace(/[_-]/g, ""),
+            menu_id: menuId,
+            main_heading_id: headingId,
             count: 0,
           };
         }
 
-        menuMap[slug].count++;
+        menuMap[key].count++;
       });
 
       const nrMenus = Object.values(menuMap).filter(
@@ -120,24 +204,18 @@ const Dashboard = () => {
         }
       });
 
-      // -----------------------
-
       setData({
         counts: {
           mydata: myData,
           nangia: nangia,
           nr: nrData,
         },
-
         nrMenus,
-
         visitData,
-
         stats: {
           totalFolders: Object.values(visitData).filter(
             (x) => x.length > 0
           ).length,
-
           totalFiles: visitFiles.length,
         },
       });
@@ -181,6 +259,7 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
         <div className="row gy-5 g-xl-10">
           <div className="col-xl-5 mb-xl-10">
             <div className="card card-flush h-lg-100">
@@ -195,6 +274,7 @@ const Dashboard = () => {
                   </span>
                 </h3>
               </div>
+
               <div className="card-body">
                 <div className="tab-content">
                   <div
@@ -225,9 +305,10 @@ const Dashboard = () => {
                                 </span>
                               </div>
                             </div>
+
                             <div>
                               <button
-                                onClick={() => handleOpen(menu.slug)}
+                                onClick={() => handleOpen(menu)}
                                 className="btn btn-sm btn-light-primary fw-semibold px-3 rounded-pill"
                               >
                                 <i className="bi bi-box-arrow-up-right me-1"></i>
@@ -238,12 +319,14 @@ const Dashboard = () => {
                         ))}
                       </div>
                     </div>
+
                     <div className="separator separator-dashed my-6"></div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+
           <div className="col-xl-7 mb-5 mb-xl-10">
             <div className="row g-5 g-xl-10 h-xxl-50 mb-0 mb-xl-10">
               <div className="col-xxl-12 mb-5 mb-xl-0">
@@ -257,7 +340,7 @@ const Dashboard = () => {
                         {data.stats?.totalFolders || 0} folders •{" "}
                         {data.stats?.totalFiles || 0} visits
                       </span>
-                    </h3>
+                    </div>
 
                     <div className="card-toolbar">
                       <button
