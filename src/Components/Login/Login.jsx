@@ -168,10 +168,10 @@ const Login = () => {
       <div className="d-flex flex-column flex-root min-vh-100">
         <div className="d-flex flex-column flex-lg-row flex-column-fluid h-100">
           {/* LEFT SIDE */}
-          <div className="d-none d-lg-flex flex-column flex-lg-row-auto w-xl-600px bg-primary position-xl-relative">
-            <div className="d-flex flex-column position-xl-fixed top-0 bottom-0 w-xl-600px scroll-y">
-              <div className="d-flex flex-column flex-center text-center flex-grow-1 py-2 py-lg-0">
-                <a href={process.env.PUBLIC_URL + "/"} className="py-2 py-lg-9 mb-1 mb-lg-4">
+          <div className="d-flex flex-column flex-lg-row-auto w-100 w-lg-600px bg-primary position-xl-relative flex-shrink-0 py-3 py-lg-0" style={{ minHeight: "145px" }}>
+            <div className="d-flex flex-column w-100 w-lg-600px h-100">
+              <div className="d-flex flex-column flex-center text-center flex-grow-1 py-1 py-lg-0">
+                <a href={process.env.PUBLIC_URL + "/"} className="py-1 py-lg-9 mb-1 mb-lg-4">
                   <img
                     alt="Logo"
                     src={
@@ -199,7 +199,7 @@ const Login = () => {
           </div>
 
           {/* RIGHT SIDE */}
-          <div className="d-flex flex-column flex-lg-row-fluid py-5 py-lg-10 min-vh-100">
+          <div className="d-flex flex-column flex-lg-row-fluid py-3 py-lg-10 min-vh-100">
             <div className="d-flex flex-center flex-column flex-column-fluid">
               <div className="w-100 w-lg-500px px-4 px-sm-8 px-lg-15 py-2 py-lg-0 mx-auto" style={{ maxWidth: "560px", boxSizing: "border-box" }}>
                 <form className="form w-100" onSubmit={handleSubmit}>
