@@ -413,8 +413,8 @@ export default function WorkTracker({ embedded = false, onClose }) {
   };
 
   return (
-    <div className="d-flex flex-column flex-column-fluid" id="kt_content">
-      <div className="container-xxl py-6">
+    <div className="d-flex flex-column flex-column-fluid" id="kt_content" style={embedded ? { width: "100%", maxWidth: "100%", overflowX: "hidden" } : undefined}>
+      <div className="container-xxl py-6" style={embedded ? { width: "100%", maxWidth: "100%", margin: "0 auto", padding: "0", boxSizing: "border-box" } : undefined}>
         {alert && (
           <div className={`alert alert-${alert.type} mb-6`}>
             <strong>{alert.title}</strong>
