@@ -6,6 +6,7 @@ import { AdminTableToolbar, AdminTableFooter, useAdminTable } from "../Utility/A
 const ManageMenu = () => {
   const username = sessionStorage.getItem("user") || "Unknown";
   const isAdmin = (sessionStorage.getItem("role") || "").toLowerCase() === "admin";
+  const canManage = Boolean(sessionStorage.getItem("user_id"));
   const [headings, setHeadings] = useState([]);
   const [rows, setRows] = useState([]);
   const [formHeadingId, setFormHeadingId] = useState("");
@@ -121,7 +122,7 @@ const ManageMenu = () => {
       <div className="container-xxl mt-5">
         {alert && <div className={`alert alert-${alert.type} mb-5`}><h4>{alert.title}</h4><span>{alert.message}</span></div>}
 
-        {isAdmin && (
+        {canManage && (
         <div className="card shadow-sm mb-5">
           <div className="card-header"><h3 className="card-title fw-bold">
                 <i className="ki-duotone ki-plus-square fs-2 me-2 text-primary">
@@ -146,7 +147,7 @@ const ManageMenu = () => {
               </div>
               <div className="col-lg-3"><button className="btn btn-primary w-100" disabled={saving}>{saving ? "Saving..." : "Add Menu"}</button></div>
             </form>
-            {!isAdmin && <div className="form-text mt-3">You can view menus under your assigned Main Headings.</div>}
+            {!isAdmin && <div className="form-text mt-3">You can add and update menus under your assigned Main Headings. Delete is available only to administrators.</div>}
           </div>
         </div>
 
@@ -164,7 +165,7 @@ const ManageMenu = () => {
             <div className="table-responsive">
               <table className="table table-row-dashed table-hover align-middle fs-7 mb-0">
                 <thead><tr className="text-muted fw-bold fs-8 text-uppercase bg-light">
-                  <th className="ps-5">#</th><th>Main Heading</th><th>Menu Name</th><th>Created By</th><th>Created Date</th>{isAdmin && <th className="text-end pe-5">Action</th>}
+                  <th className="ps-5">#</th><th>Main Heading</th><th>Menu Name</th><th>Created By</th><th>Created Date</th>{canManage && <th className="text-end pe-5">Action</th>}
                 </tr></thead>
                 <tbody>
                   {table.visibleRows.map((r, i) => <tr key={r.id}>
@@ -188,7 +189,7 @@ const ManageMenu = () => {
                                 })
                               : "-"}</td>
                     <td className="text-end pe-5">
-                      {isAdmin && (editId === r.id ? <>
+                      {canManage && (editId === r.id ? <>
                         <button className="btn btn-sm btn-success me-1" onClick={() => save(r.id)} disabled={saving}>Save</button>
                         <button className="btn btn-sm btn-light" onClick={() => setEditId(null)}>Cancel</button>
                       </> : deleteId === r.id ? <>
@@ -200,7 +201,7 @@ const ManageMenu = () => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                   </i></button>
-                        <button className="btn btn-sm btn-icon btn-light-danger" onClick={() => setDeleteId(r.id)} title="Delete"><i className="ki-duotone ki-trash fs-4">
+                        {isAdmin && <button className="btn btn-sm btn-icon btn-light-danger" onClick={() => setDeleteId(r.id)} title="Delete"><i className="ki-duotone ki-trash fs-4">
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                     <span className="path3"></span>
@@ -210,7 +211,7 @@ const ManageMenu = () => {
                       </>)}
                     </td>
                   </tr>)}
-                  {!table.visibleRows.length && <tr><td colSpan={isAdmin ? 6 : 5} className="text-center py-10 text-muted">No menus found for your accessible Main Headings.</td></tr>}
+                  {!table.visibleRows.length && <tr><td colSpan={canManage ? 6 : 5} className="text-center py-10 text-muted">No menus found for your accessible Main Headings.</td></tr>}
                 </tbody>
               </table>
             </div>
