@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import $ from "jquery";
 import JSZip from "jszip";
 import pdfMake from "pdfmake/build/pdfmake";
@@ -6,6 +6,7 @@ import pdfFonts from "pdfmake/build/vfs_fonts";
 import Footer from "../Footer/Footer";
 import { supabase } from "../../supabase";
 import { getAccessibleHeadings, getAccessibleMenus } from "../Utility/dataAccess";
+import WorkTracker from "../Admin/WorkTracker";
 window.JSZip = JSZip;
 if (pdfFonts && pdfFonts.pdfMake) {
   pdfMake.vfs = pdfFonts.pdfMake.vfs;
@@ -52,6 +53,7 @@ const ucFirst = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
 const tableId = (page) => `dt_table_${page}`;
 
 export default function Display({ page }) {
+  const [showWorkTodo, setShowWorkTodo] = useState(false);
   // ── Derive config directly from PAGE_CONFIG — single source of truth ──────
   const getHF = () => !!PAGE_CONFIG[page]?.hasFolders;
   const getTitle = () => PAGE_CONFIG[page]?.title || "";
@@ -732,17 +734,18 @@ export default function Display({ page }) {
                   </select>
                 </div>
 
-                <a
-                  href="/Railways/worktracker"
+                <button
+                  type="button"
                   className="btn btn-light-success"
-                  title="Open connected work and todo tracker for this Main Heading / Menu"
+                  onClick={() => setShowWorkTodo(true)}
+                  title="Record Work / Todo for this Main Heading / Menu"
                 >
                   <i className="ki-duotone ki-check-square fs-2">
                     <span className="path1"></span>
                     <span className="path2"></span>
                   </i>
                   Work / Todo
-                </a>
+                </button>
 
                 <button
                   className="btn btn-light-primary"
@@ -795,6 +798,15 @@ export default function Display({ page }) {
             </div>
           </div>
         </div>
+          {showWorkTodo && (
+            <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-start justify-content-center"
+              style={{ background: "rgba(0,0,0,.45)", zIndex: 1050, overflowY: "auto", padding: "40px 20px" }}
+              onMouseDown={(e) => { if (e.target === e.currentTarget) setShowWorkTodo(false); }}>
+              <div className="w-100" style={{ maxWidth: 1200 }}>
+                <WorkTracker embedded onClose={() => setShowWorkTodo(false)} />
+              </div>
+            </div>
+          )}
       </div>
       <Footer />
     </div>
