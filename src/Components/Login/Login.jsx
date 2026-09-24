@@ -168,7 +168,7 @@ const Login = () => {
       <div className="d-flex flex-column flex-root min-vh-100">
         <div className="d-flex flex-column flex-lg-row flex-column-fluid h-100">
           {/* LEFT SIDE */}
-          <div className="d-flex flex-column flex-lg-row-auto w-xl-600px bg-primary position-xl-relative">
+          <div className="d-none d-lg-flex flex-column flex-lg-row-auto w-xl-600px bg-primary position-xl-relative">
             <div className="d-flex flex-column position-xl-fixed top-0 bottom-0 w-xl-600px scroll-y">
               <div className="d-flex flex-row-fluid flex-column flex-center text-center">
                 <a href={process.env.PUBLIC_URL + "/"} className="py-9 mb-4">
@@ -199,11 +199,11 @@ const Login = () => {
           </div>
 
           {/* RIGHT SIDE */}
-          <div className="d-flex flex-column flex-lg-row-fluid py-10">
+          <div className="d-flex flex-column flex-lg-row-fluid py-5 py-lg-10 min-vh-100">
             <div className="d-flex flex-center flex-column flex-column-fluid">
-              <div className="w-lg-500px p-10 p-lg-15 mx-auto">
+              <div className="w-100 w-lg-500px px-5 px-sm-8 px-lg-15 py-5 py-lg-0 mx-auto" style={{ maxWidth: "560px", boxSizing: "border-box" }}>
                 <form className="form w-100" onSubmit={handleSubmit}>
-                  <div className="text-center mb-10">
+                  <div className="text-center mb-7 mb-lg-10">
                     <h1 className="text-gray-900 mb-3">Sign In</h1>
                   </div>
 
@@ -216,11 +216,11 @@ const Login = () => {
                   )}
 
                   {/* USERNAME */}
-                  <div className="fv-row mb-10">
+                  <div className="fv-row mb-7 mb-lg-10">
                     <label className="form-label fw-bold">Username</label>
                     <input
                       type="text"
-                      className="form-control form-control-lg form-control-solid"
+                      className="form-control form-control-lg form-control-solid w-100"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       autoComplete="off"
@@ -251,7 +251,7 @@ const Login = () => {
                   </div>
 
                   {/* BUTTON */}
-                  <div className="text-center">
+                  <div className="text-center pt-1">
                     <button
                       type="submit"
                       className="btn btn-lg btn-primary w-100 mb-5"
