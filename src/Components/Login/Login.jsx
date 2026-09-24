@@ -272,14 +272,26 @@ const Login = () => {
 
       <style>{`
         @media (max-width: 991.98px) {
-          .login-form-section .flex-center {
-            justify-content: flex-start !important;
+          .login-form-section {
+            min-height: 0 !important;
+            height: auto !important;
+            padding-top: 0 !important;
+            padding-bottom: 20px !important;
           }
+
           .login-form-section .login-form-content {
-            justify-content: initial !important;
+            justify-content: flex-start !important;
+            align-items: stretch !important;
+            min-height: 0 !important;
+            height: auto !important;
+            flex: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
+
           .login-form-section .login-signin-title {
-            margin-top: 10px !important;
+            margin-top: 0 !important;
+            margin-bottom: 5px !important;
           }
         }
       `}</style>
