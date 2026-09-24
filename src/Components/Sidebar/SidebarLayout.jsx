@@ -89,11 +89,19 @@ const SidebarLayout = ({ children }) => {
   const hasAccess = () => true;
 
   useEffect(() => {
+    let cancelled = false;
     let cleanupPresence;
+
     startPresence().then((cleanup) => {
+      if (cancelled) {
+        cleanup();
+        return;
+      }
       cleanupPresence = cleanup;
     });
+
     return () => {
+      cancelled = true;
       if (cleanupPresence) cleanupPresence();
     };
   }, []);
