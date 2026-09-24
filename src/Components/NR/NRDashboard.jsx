@@ -577,7 +577,33 @@ export default function NRDashboard() {
                     const c = colors[i % colors.length];
 
                     return (
-                      <div key={i} className="d-flex align-items-center mb-4">
+                      <div
+                        key={i}
+                        className="d-flex align-items-center mb-4"
+                        onClick={() => {
+                          const menu = quickAccessMenus.find(
+                            (m) =>
+                              String(m.menuname || "").trim().toLowerCase() ===
+                              String(f.menuname || "").trim().toLowerCase(),
+                          );
+                          if (menu) navigateToMenu(menu);
+                        }}
+                        style={{ cursor: "pointer" }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            const menu = quickAccessMenus.find(
+                              (m) =>
+                                String(m.menuname || "").trim().toLowerCase() ===
+                                String(f.menuname || "").trim().toLowerCase(),
+                            );
+                            if (menu) navigateToMenu(menu);
+                          }
+                        }}
+                        title="Open folder"
+                      >
                         {/* ICON */}
                         <div className="symbol symbol-35px me-3">
                           <span className={`symbol-label bg-light-${c}`}>
