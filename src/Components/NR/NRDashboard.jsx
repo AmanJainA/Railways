@@ -26,7 +26,9 @@ export default function NRDashboard() {
       (menu.menuname || "").toLowerCase().replace(/[^a-z0-9]+/g, "")
     );
 
-    navigate("/nr/display");
+    navigate("/nr/display", {
+      state: { menu: menu.menuname || "" },
+    });
   };
   const [quickAccessMenus, setQuickAccessMenus] = useState([]);
   const [data, setData] = useState({
