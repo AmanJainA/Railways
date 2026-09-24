@@ -728,8 +728,14 @@ export default function NRDashboard() {
 
                                 {/* VIEW BUTTON */}
                                 <td className="pe-5 text-end">
-                                  <a
-                                    href={`/nr/viewer?file=${encodeURIComponent(file.links || "")}`}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const fileUrl = file.links || "";
+                                      if (!fileUrl) return;
+                                      sessionStorage.setItem("viewer_file", fileUrl);
+                                      navigate("/nr/viewer");
+                                    }}
                                     className="btn btn-sm btn-icon btn-light-primary"
                                     title="View"
                                   >
