@@ -181,14 +181,26 @@ export default function NRDashboard() {
 
       files.forEach((item) => {
         const folderName = String(item.menuname || "Others").trim();
-        const folderKey = item.menu_id
-          ? String(item.menu_id)
+        const menuId = item.menu_id ? Number(item.menu_id) : null;
+        const folderKey = menuId
+          ? String(menuId)
           : `name:${folderName.toLowerCase()}`;
 
         if (!folderMap[folderKey]) {
+          // Keep the actual menu record with this folder. The Open action
+          // below will use this exact record instead of guessing by name.
+          const exactMenu = menuId
+            ? dashboardMenus.find((m) => Number(m.id) === menuId)
+            : dashboardMenus.find(
+                (m) =>
+                  String(m.menuname || "").trim().toLowerCase() ===
+                  folderName.toLowerCase()
+              );
+
           folderMap[folderKey] = {
-            menuId: item.menu_id ? Number(item.menu_id) : null,
-            menuname: folderName,
+            menuId,
+            menuname: exactMenu?.menuname || folderName,
+            menu: exactMenu || null,
             total: 0,
           };
         }
@@ -583,19 +595,9 @@ export default function NRDashboard() {
                         key={i}
                         className="d-flex align-items-center mb-4"
                         onClick={() => {
-                          // Use the exact menu_id from datacollection first,
-                          // then fall back to the exact menu name.
-                          const menu =
-                            quickAccessMenus.find(
-                              (m) => Number(m.id) === Number(f.menuId),
-                            ) ||
-                            quickAccessMenus.find(
-                              (m) =>
-                                String(m.menuname || "").trim().toLowerCase() ===
-                                String(f.menuname || "").trim().toLowerCase(),
-                            );
-
-                          if (menu) navigateToMenu(menu);
+                          // The folder already carries the exact menu record
+                          // used to build it. Do not resolve it again by name.
+                          if (f.menu) navigateToMenu(f.menu);
                         }}
                         style={{ cursor: "pointer" }}
                         role="button"
@@ -603,18 +605,8 @@ export default function NRDashboard() {
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
-                            const menu =
-                              quickAccessMenus.find(
-                                (m) => Number(m.id) === Number(f.menuId),
-                              ) ||
-                              quickAccessMenus.find(
-                                (m) =>
-                                  String(m.menuname || "").trim().toLowerCase() ===
-                                  String(f.menuname || "").trim().toLowerCase(),
-                              );
-
-                            if (menu) {
-                              navigateToMenu(menu);
+                            if (f.menu) {
+                              navigateToMenu(f.menu);
                             }
                           }
                         }}
