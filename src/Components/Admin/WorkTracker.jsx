@@ -561,29 +561,35 @@ export default function WorkTracker({ embedded = false, onClose }) {
         )}
         {!embedded && <div className="card shadow-sm">
           <div className="card-header">
-            <div className="w-100">
-              <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                <div>
-                  <h3 className="card-title fw-bold mb-1">Connected Work Register</h3>
-                  <div className="text-muted fs-7">Use the hierarchy to understand exactly what was done and which deliverables belong to it.</div>
-                </div>
-                {admin && (
-                  <div className="d-flex flex-wrap gap-2">
-                    <select className="form-select form-select-sm" value={filterHeading} onChange={(e) => { setFilterHeading(e.target.value); setFilterMenu("all"); }}>
-                      <option value="all">All Main Headings</option>
-                      {headings.map((h) => <option key={h.id} value={h.id}>{h.headingname}</option>)}
-                    </select>
-                    <select className="form-select form-select-sm" value={filterMenu} onChange={(e) => setFilterMenu(e.target.value)}>
-                      <option value="all">All Menus</option>
-                      {filteredMenus.map((m) => <option key={m.id} value={m.id}>{m.menuname}</option>)}
-                    </select>
-                    <select className="form-select form-select-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                      <option value="all">All Status</option>
-                      {Object.entries(STATUS).map(([v, x]) => <option key={v} value={v}>{x.label}</option>)}
-                    </select>
-                  </div>
-                )}
+            <div className="row g-4 align-items-center w-100">
+              <div className={admin ? "col-md-6" : "col-12"}>
+                <h3 className="card-title fw-bold mb-1">Connected Work Register</h3>
+                <div className="text-muted fs-7">Use the hierarchy to understand exactly what was done and which deliverables belong to it.</div>
               </div>
+              {admin && (
+                <div className="col-md-6">
+                  <div className="row g-2">
+                    <div className="col-md-4">
+                      <select className="form-select form-select-sm w-100" value={filterHeading} onChange={(e) => { setFilterHeading(e.target.value); setFilterMenu("all"); }}>
+                        <option value="all">All Main Headings</option>
+                        {headings.map((h) => <option key={h.id} value={h.id}>{h.headingname}</option>)}
+                      </select>
+                    </div>
+                    <div className="col-md-4">
+                      <select className="form-select form-select-sm w-100" value={filterMenu} onChange={(e) => setFilterMenu(e.target.value)}>
+                        <option value="all">All Menus</option>
+                        {filteredMenus.map((m) => <option key={m.id} value={m.id}>{m.menuname}</option>)}
+                      </select>
+                    </div>
+                    <div className="col-md-4">
+                      <select className="form-select form-select-sm w-100" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                        <option value="all">All Status</option>
+                        {Object.entries(STATUS).map(([v, x]) => <option key={v} value={v}>{x.label}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
