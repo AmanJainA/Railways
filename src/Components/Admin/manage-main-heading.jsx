@@ -21,7 +21,14 @@ const ManageMainHeading = () => {
 
   const load = async () => {
     try {
-      const data = await getAccessibleHeadings();
+      const { data, error } = isAdmin
+        ? await supabase
+            .from("main_heading_master")
+            .select("id,headingname,status,created_at,created_by")
+            .order("id", { ascending: true })
+        : { data: await getAccessibleHeadings(), error: null };
+
+      if (error) throw error;
       setRows(data || []);
     } catch (e) {
       showAlert("danger", "Error", e.message);
@@ -50,6 +57,28 @@ const ManageMainHeading = () => {
       showAlert("success", "Success", "Main Heading added successfully.");
       await load();
     } catch (e) { showAlert("danger", "Error", e.message); }
+    setSaving(false);
+  };
+
+  const toggleStatus = async (row) => {
+    if (!isAdmin) return;
+    const nextStatus = String(row.status) === "1" ? "0" : "1";
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("main_heading_master")
+        .update({ status: nextStatus })
+        .eq("id", row.id);
+      if (error) throw error;
+      showAlert(
+        "success",
+        "Success",
+        row.headingname + " is now " + (nextStatus === "1" ? "ON" : "OFF") + "."
+      );
+      await load();
+    } catch (e) {
+      showAlert("danger", "Error", e.message);
+    }
     setSaving(false);
   };
 
@@ -119,12 +148,30 @@ const ManageMainHeading = () => {
             <div className="table-responsive">
               <table className="table table-row-dashed table-hover align-middle fs-7 mb-0">
                 <thead><tr className="text-muted fw-bold fs-8 text-uppercase bg-light">
-                  <th className="ps-5">#</th><th>Main Heading</th><th>Created By</th><th>Created</th>{isAdmin && <th className="text-end pe-5">Action</th>}
+                  <th className="ps-5">#</th><th>Main Heading</th><th>Status</th><th>Created By</th><th>Created</th>{isAdmin && <th className="text-end pe-5">Action</th>}
                 </tr></thead>
                 <tbody>
                   {table.visibleRows.map((r, i) => <tr key={r.id}>
                     <td className="ps-5">{(table.page - 1) * table.pageSize + i + 1}</td>
                     <td>{editId === r.id ? <input className="form-control form-control-sm" value={editValue} onChange={(e) => setEditValue(e.target.value)} autoFocus /> : <span className="badge badge-light-primary fw-semibold">{r.headingname}</span>}</td>
+                    <td>
+                      {isAdmin ? (
+                        <button
+                          type="button"
+                          className={`btn btn-sm btn-icon ${String(r.status) === "1" ? "btn-light-success" : "btn-light-secondary"}`}
+                          onClick={() => toggleStatus(r)}
+                          disabled={saving}
+                          title={String(r.status) === "1" ? "Turn Off" : "Turn On"}
+                          aria-label={String(r.status) === "1" ? "Turn Off" : "Turn On"}
+                        >
+                          <i className={`bi ${String(r.status) === "1" ? "bi-toggle-on text-success" : "bi-toggle-off text-muted"} fs-2`}></i>
+                        </button>
+                      ) : (
+                        <span className={`badge ${String(r.status) === "1" ? "badge-light-success" : "badge-light-secondary"}`}>
+                          {String(r.status) === "1" ? "ON" : "OFF"}
+                        </span>
+                      )}
+                    </td>
                     <td>{r.created_by || "-"}</td>
                     <td>{r.created_at
                               ? new Date(r.created_at).toLocaleString("en-IN", {
@@ -159,7 +206,7 @@ const ManageMainHeading = () => {
                       </>}
                     </td>}
                   </tr>)}
-                  {!table.visibleRows.length && <tr><td colSpan={isAdmin ? 5 : 4} className="text-center py-10 text-muted">No Main Headings assigned to this user.</td></tr>}
+                  {!table.visibleRows.length && <tr><td colSpan={isAdmin ? 6 : 5} className="text-center py-10 text-muted">No Main Headings assigned to this user.</td></tr>}
                 </tbody>
               </table>
             </div>
