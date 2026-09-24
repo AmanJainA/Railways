@@ -192,7 +192,7 @@ const Login = () => {
                     "/assets/media/illustrations/dozzy-1/2.png"
                   }
                   alt=""
-                  className="h-200px h-lg-300px mb-2"
+                  className="d-none d-lg-block h-200px h-lg-300px mb-2"
                 />
               </div>
             </div>
