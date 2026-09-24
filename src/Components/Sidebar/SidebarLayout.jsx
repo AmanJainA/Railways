@@ -5,6 +5,7 @@ import logodefault from "../Assets/logos/logo-default.svg";
 import logominimize from "../Assets/logos/logo-compact.svg";
 import { supabase } from "../../supabase";
 import { getAccessibleHeadings, getAccessibleMenus, setCurrentDataContext } from "../Utility/dataAccess";
+import { startPresence, markCurrentUserOffline } from "../Utility/presence";
 const pageTitles = {
   "/dashboard": "Dashboard",
   "/mydata": "My Data",
@@ -86,6 +87,16 @@ const SidebarLayout = ({ children }) => {
 
   const userDisplay = user.charAt(0).toUpperCase() + user.slice(1);
   const hasAccess = () => true;
+
+  useEffect(() => {
+    let cleanupPresence;
+    startPresence().then((cleanup) => {
+      cleanupPresence = cleanup;
+    });
+    return () => {
+      if (cleanupPresence) cleanupPresence();
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
