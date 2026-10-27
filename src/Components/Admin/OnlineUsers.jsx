@@ -6,6 +6,8 @@ const ONLINE_WINDOW_SECONDS = 35;
 const OnlineUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
 
   const loadOnlineUsers = useCallback(async () => {
     const cutoff = new Date(Date.now() - ONLINE_WINDOW_SECONDS * 1000).toISOString();
@@ -70,6 +72,13 @@ const OnlineUsers = () => {
     });
   };
 
+  const filteredUsers = users.filter((user) => {
+    const term = search.trim().toLowerCase();
+    const matchesSearch = !term || [user.username, user.email, user.role].some((value) => (value || "").toLowerCase().includes(term));
+    const matchesRole = roleFilter === "all" || (user.role || "").toLowerCase() === roleFilter;
+    return matchesSearch && matchesRole;
+  });
+
   return (
     <div className="card card-flush shadow-sm mb-8">
       <div className="card-header pt-7">
@@ -78,7 +87,7 @@ const OnlineUsers = () => {
             Currently Online
           </span>
           <span className="text-gray-500 mt-1 fw-semibold fs-7">
-            {users.length} user{users.length === 1 ? "" : "s"} online • updates automatically
+            {filteredUsers.length} user{filteredUsers.length === 1 ? "" : "s"} shown • updates automatically
           </span>
         </div>
         <div className="card-toolbar">
@@ -90,19 +99,23 @@ const OnlineUsers = () => {
       </div>
 
       <div className="card-body pt-3">
+        <div className="row g-3 mb-5">
+          <div className="col-md-8"><input className="form-control form-control-solid" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search username, email or role" aria-label="Search online users" /></div>
+          <div className="col-md-4"><select className="form-select form-select-solid" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} aria-label="Filter by role"><option value="all">All roles</option><option value="admin">Admin</option><option value="subadmin">Subadmin</option><option value="user">User</option></select></div>
+        </div>
         {loading ? (
           <div className="text-muted py-5">
             <span className="spinner-border spinner-border-sm text-primary me-2"></span>
             Checking online users...
           </div>
-        ) : users.length === 0 ? (
-          <div className="text-muted py-5">No users are currently online.</div>
+        ) : filteredUsers.length === 0 ? (
+          <div className="text-muted py-5">No online users match your search or filter.</div>
         ) : (
           <div className="table-responsive">
             <table className="table table-row-dashed align-middle mb-0">
               <thead>
                 <tr className="text-muted fw-bold fs-8 text-uppercase">
-                  <th>User</th>
+                  <th>Username</th>
                   <th>Email</th>
                   <th>Role</th>
                   <th>Last Activity</th>
@@ -110,7 +123,7 @@ const OnlineUsers = () => {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <tr key={user.user_id}>
                     <td>
                       <div className="d-flex align-items-center">
