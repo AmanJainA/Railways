@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabase";
 import Footer from "../Footer/Footer";
+import "./UserProfiles.css";
 
 const UserProfiles = () => {
     const role = (sessionStorage.getItem("role") || "").toLowerCase();
@@ -732,7 +733,7 @@ const UserProfiles = () => {
         <div className="d-flex flex-column flex-root">
             <div className="d-flex flex-column flex-column-fluid">
 
-                <div className="container-fluid py-5">
+                <div className="container-fluid py-5 user-access-page">
 
                     {/* =================================================
               ALERT
@@ -756,15 +757,15 @@ const UserProfiles = () => {
                             </button>
                         </div>
                     )}
-                    <div className="row g-5 mb-8">
+                    <div className="row g-3 g-md-5 mb-8 user-access-stats">
 
                         {/* TOTAL USERS */}
 
-                        <div className="col-md-4">
+                        <div className="col-4 col-md-4 user-access-stat-col">
                             <div className="card card-flush h-md-100 shadow-sm">
-                                <div className="card-body d-flex align-items-center">
+                                <div className="card-body d-flex align-items-center user-access-stat-body">
 
-                                    <div className="symbol symbol-60px me-5">
+                                    <div className="symbol symbol-60px me-5 user-access-stat-icon">
                                         <span className="symbol-label bg-light-primary">
                                             <i className="ki-duotone ki-profile-user fs-2x text-primary">
                                                 <span className="path1"></span>
@@ -791,7 +792,7 @@ const UserProfiles = () => {
 
                         {/* ADMINISTRATORS */}
 
-                        <div className="col-md-4">
+                        <div className="col-4 col-md-4 user-access-stat-col">
                             <div className="card card-flush h-md-100 shadow-sm">
                                 <div className="card-body d-flex align-items-center">
 
@@ -821,7 +822,7 @@ const UserProfiles = () => {
 
                         {/* NORMAL USERS */}
 
-                        <div className="col-md-4">
+                        <div className="col-4 col-md-4 user-access-stat-col">
                             <div className="card card-flush h-md-100 shadow-sm">
                                 <div className="card-body d-flex align-items-center">
 
@@ -866,11 +867,11 @@ const UserProfiles = () => {
                                 </h3>
                             </div>
 
-                            <div className="card-toolbar flex-row-fluid justify-content-end gap-3 position-relative">
+                            <div className="card-toolbar flex-row-fluid justify-content-end gap-3 position-relative user-access-toolbar">
 
                                 {/* SEARCH */}
 
-                                <div className="w-250px">
+                                <div className="w-250px user-access-search">
                                     <div className="position-relative">
 
                                         <i className="ki-duotone ki-magnifier fs-3 position-absolute ms-4 mt-3">
@@ -891,7 +892,7 @@ const UserProfiles = () => {
 
                                 {/* ROLE FILTER */}
 
-                                <div className="w-150px">
+                                <div className="w-150px user-access-role">
                                     <select
                                         className="form-select form-select-solid"
                                         value={roleFilter}
@@ -910,7 +911,7 @@ const UserProfiles = () => {
 
                                 <button
                                     type="button"
-                                    className="btn btn-light-primary"
+                                    className="btn btn-light-primary user-access-export"
                                     onClick={() =>
                                         setShowExportMenu(!showExportMenu)
                                     }
@@ -974,7 +975,7 @@ const UserProfiles = () => {
                                     </div>
                                 )}
                                 <button
-                                    className="btn btn-primary"
+                                    className="btn btn-primary user-access-add"
                                     onClick={openAddModal}
                                 >
                                     <i className="ki-duotone ki-plus fs-2">
