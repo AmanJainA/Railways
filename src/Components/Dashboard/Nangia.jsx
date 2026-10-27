@@ -157,7 +157,8 @@ const Nangia = () => {
         if (value === "all" || value === "") {
           table.column(2).search("").draw();
         } else {
-          table.column(2).search(value).draw();
+          const patterns = { img: "\\.(jpg|jpeg|png|gif|bmp|svg)$", pdf: "^pdf$", doc: "^docx?$", xls: "^xlsx?$" };
+          table.column(2).search(patterns[value] || value, true, false).draw();
         }
       });
 
@@ -333,15 +334,7 @@ const Nangia = () => {
                         </div>
                       </td>
                       <td>
-                        <a
-                          href={`/nr/viewer?file=${encodeURIComponent(row.links)}`}
-                        >
-                          <i className="ki-duotone ki-eye fs-3 mt-2 text-primary">
-                            <span className="path1"></span>
-                            <span className="path2"></span>
-                            <span className="path3"></span>
-                          </i>
-                        </a>
+                        <a className="btn btn-sm btn-light-primary" href={`/nr/viewer?file=${encodeURIComponent(row.links)}`}>Open</a>
                       </td>
                     </tr>
                   ))}
