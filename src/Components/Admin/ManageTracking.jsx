@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import OnlineUsers from "./OnlineUsers";
 import LoginHistory from "./LoginHistory";
 import PageActivity from "./PageActivity";
+import "./ManageTracking.css";
 
 const ManageTracking = () => {
   const [activeTab, setActiveTab] = useState("online");
@@ -19,7 +20,7 @@ const ManageTracking = () => {
   };
 
   return (
-    <div className="content d-flex flex-column flex-column-fluid fs-6" id="kt_content">
+    <div className="content d-flex flex-column flex-column-fluid fs-6 manage-tracking-page" id="kt_content">
       <div className="container-xxl mt-5">
         <div className="card card-flush shadow-sm mb-5">
           <div className="card-header border-0 pt-6 pb-2">
@@ -34,7 +35,7 @@ const ManageTracking = () => {
           </div>
 
           <div className="card-body pt-0 pb-0">
-            <ul className="nav nav-tabs nav-line-tabs nav-line-tabs-2x">
+            <ul className="nav nav-tabs nav-line-tabs nav-line-tabs-2x manage-tracking-tabs">
               {tabs.map((tab) => (
                 <li className="nav-item" key={tab.id}>
                   <button
