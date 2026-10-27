@@ -1,0 +1,21 @@
+/* Responsive layout for Manage Tracking and its tabs */
+.manage-tracking-page, .manage-tracking-page .container-xxl { min-width: 0; max-width: 100%; }
+.manage-tracking-page .manage-tracking-tabs {
+  flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+  -webkit-overflow-scrolling: touch; scrollbar-width: thin;
+}
+.manage-tracking-page .manage-tracking-tabs .nav-item { flex: 0 0 auto; }
+.manage-tracking-page .manage-tracking-tabs .nav-link { white-space: nowrap; }
+.manage-tracking-page .card-body, .manage-tracking-page .card-header,
+.manage-tracking-page .card-title, .manage-tracking-page .card-toolbar { min-width: 0; }
+.manage-tracking-page .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 767.98px) {
+  .manage-tracking-page .container-xxl { padding-left: 0.75rem; padding-right: 0.75rem; }
+  .manage-tracking-page .card-header { padding: 1rem 1rem 0.5rem; flex-wrap: wrap; gap: 0.5rem; }
+  .manage-tracking-page .card-body { padding-left: 0.75rem; padding-right: 0.75rem; }
+  .manage-tracking-page .manage-tracking-tabs .nav-link { padding: 0.7rem 0.8rem; font-size: 0.78rem; }
+  .manage-tracking-page .manage-tracking-tabs .nav-link .bi { margin-right: 0.35rem !important; }
+  .manage-tracking-page .table { min-width: 620px; }
+  .manage-tracking-page .row > [class*="col-"] { min-width: 0; }
+}
