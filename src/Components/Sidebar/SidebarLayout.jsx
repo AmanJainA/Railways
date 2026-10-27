@@ -586,7 +586,7 @@ const SidebarLayout = ({ children }) => {
                         <span className="path2"></span>
                       </i>
                     </span>
-                    <span className="menu-title">Work / Todo</span>
+                    <span className="menu-title">Work Tracker / Todo</span>
                   </Link>
                 </div>
 
