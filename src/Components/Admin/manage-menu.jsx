@@ -68,7 +68,7 @@ const ManageMenu = () => {
   const table = useAdminTable(rows, ["menuname", "created_by"]);
 
   const exportRows = useMemo(() => (items) =>
-    items.map((r, i) => [i + 1, headingName(r.main_heading_id), r.menuname || "", r.created_by || ""]), [headings, rows]);
+    items.map((r, i) => [i + 1, headingName(r.main_heading_id), r.menuname || "", String(r.status) === "1" ? "ON" : "OFF", r.created_by || "", r.created_at ? new Date(r.created_at).toLocaleString("en-IN") : ""]), [headings, rows]);
 
   const add = async (e) => {
     e.preventDefault();
