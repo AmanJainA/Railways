@@ -142,7 +142,7 @@ const ManageMainHeading = () => {
           </div>
         ) : (
           <div className="card shadow-sm mb-5">
-            <div className="card-body"><h3 className="fw-bold mb-2">Main Heading Access</h3><div className="text-muted">Only Main Headings assigned to your user are shown below.</div></div>
+            <div className="card-body"><h3 className="fw-bold mb-2">Main Headings</h3><div className="text-muted">Only Main Headings assigned to your user are shown below.</div></div>
           </div>
         )}
 
@@ -151,12 +151,12 @@ const ManageMainHeading = () => {
             <span className="badge badge-light-primary fs-7">
               {rows.length} Total
             </span></div>
-          <AdminTableToolbar table={table} headers={["#", "Main Heading", "Status", "Created By", "Created"]} getRows={exportRows} filename="Main_Headings" />
+          <AdminTableToolbar table={table} headers={["#", "Main Heading", "Active", "Created By", "Created"]} getRows={exportRows} filename="Main_Headings" />
           <div className="card-body p-0">
             <div className="table-responsive">
               <table className="table table-row-dashed table-hover align-middle fs-7 mb-0">
                 <thead><tr className="text-muted fw-bold fs-8 text-uppercase bg-light">
-                  <th className="ps-5">#</th><th>Main Heading</th><th>Status</th><th>Created By</th><th>Created</th>{isAdmin && <th className="text-end pe-5">Action</th>}
+                  <th className="ps-5">#</th><th>Main Heading</th><th>Active</th><th>Created By</th><th>Created</th>{isAdmin && <th className="text-end pe-5">Action</th>}
                 </tr></thead>
                 <tbody>
                   {table.visibleRows.map((r, i) => <tr key={r.id}>
@@ -175,9 +175,7 @@ const ManageMainHeading = () => {
                           <i className={`bi ${String(r.status) === "1" ? "bi-toggle-on text-success" : "bi-toggle-off text-muted"} fs-2`}></i>
                         </button>
                       ) : (
-                        <span className={`badge ${String(r.status) === "1" ? "badge-light-success" : "badge-light-secondary"}`}>
-                          {String(r.status) === "1" ? "ON" : "OFF"}
-                        </span>
+                        <i className={`bi ${String(r.status) === "1" ? "bi-toggle-on text-success" : "bi-toggle-off text-muted"} fs-2`} title={String(r.status) === "1" ? "On" : "Off"}></i>
                       )}
                     </td>
                     <td>{r.created_by || "-"}</td>
