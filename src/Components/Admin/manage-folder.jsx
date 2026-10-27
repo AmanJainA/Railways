@@ -71,6 +71,19 @@ const ManageFolder = () => {
   useEffect(() => { load(); }, []);
   useEffect(() => { if (form.main_heading_id) loadMenus(form.main_heading_id); }, [form.main_heading_id]);
 
+  const toggleStatus = async (row) => {
+    if (!isAdmin) return;
+    const nextStatus = String(row.status) === "1" ? "0" : "1";
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("folder_master").update({ status: nextStatus }).eq("id", row.id);
+      if (error) throw error;
+      showAlert("success", "Success", `${row.foldername} is now ${nextStatus === "1" ? "ON" : "OFF"}.`);
+      await load();
+    } catch (e) { showAlert("danger", "Error", e.message); }
+    setSaving(false);
+  };
+
   const table = useAdminTable(rows, ["foldername", "menuname", "created_by"]);
 
   const exportRows = useMemo(() => (items) =>
@@ -192,12 +205,12 @@ const ManageFolder = () => {
             <span className="badge badge-light-primary fs-7">
               {rows.length} Total
             </span></div>
-          <AdminTableToolbar table={table} headers={["#", "Main Heading", "Menu", "Folder", "Created By", "Created Date"]} getRows={exportRows} filename="Folders" />
+          <AdminTableToolbar table={table} headers={["#", "Main Heading", "Menu", "Folder", "Active", "Created By", "Created Date"]} getRows={exportRows} filename="Folders" />
           <div className="card-body p-0">
             <div className="table-responsive">
               <table className="table table-row-dashed table-hover align-middle fs-7 mb-0">
                 <thead><tr className="text-muted fw-bold fs-8 text-uppercase bg-light">
-                  <th className="ps-5">#</th><th>Main Heading</th><th>Menu</th><th>Folder</th><th>Created By</th><th>Created Date</th>{canManage && <th className="text-end pe-5">Action</th>}
+                  <th className="ps-5">#</th><th>Main Heading</th><th>Menu</th><th>Folder</th><th>Active</th><th>Created By</th><th>Created Date</th>{canManage && <th className="text-end pe-5">Action</th>}
                 </tr></thead>
                 <tbody>
                   {table.visibleRows.map((r, i) => <tr key={r.id}>
@@ -218,6 +231,7 @@ const ManageFolder = () => {
                       ) : r.menuname || menuName(r.menu_id)}
                     </td>
                     <td>{editId === r.id ? <input className="form-control form-control-sm" value={edit.foldername} onChange={(e) => setEdit((x) => ({ ...x, foldername: e.target.value }))} /> : <span className="fw-semibold">{r.foldername}</span>}</td>
+                    <td>{isAdmin ? <button type="button" className="btn btn-sm btn-icon btn-light" onClick={() => toggleStatus(r)} disabled={saving} title={String(r.status) === "1" ? "Turn Off" : "Turn On"}><i className={`bi ${String(r.status) === "1" ? "bi-toggle-on text-success" : "bi-toggle-off text-muted"} fs-2`}></i></button> : <i className={`bi ${String(r.status) === "1" ? "bi-toggle-on text-success" : "bi-toggle-off text-muted"} fs-2`}></i>}</td>
                     <td>{r.created_by || "-"}</td>
                     <td>{r.created_at
                               ? new Date(r.created_at).toLocaleString("en-IN", {
@@ -252,7 +266,7 @@ const ManageFolder = () => {
                       </>)}
                     </td>
                   </tr>)}
-                  {!table.visibleRows.length && <tr><td colSpan={canManage ? 7 : 6} className="text-center py-10 text-muted">No folders found for your accessible Main Headings.</td></tr>}
+                  {!table.visibleRows.length && <tr><td colSpan={canManage ? 8 : 7} className="text-center py-10 text-muted">No folders found for your accessible Main Headings.</td></tr>}
                 </tbody>
               </table>
             </div>
