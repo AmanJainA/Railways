@@ -87,7 +87,7 @@ const ManageFolder = () => {
   const table = useAdminTable(rows, ["foldername", "menuname", "created_by"]);
 
   const exportRows = useMemo(() => (items) =>
-    items.map((r, i) => [i + 1, headingName(r.main_heading_id), r.menuname || menuName(r.menu_id), r.foldername || "", r.created_by || ""]),
+    items.map((r, i) => [i + 1, headingName(r.main_heading_id), r.menuname || menuName(r.menu_id), r.foldername || "", String(r.status) === "1" ? "ON" : "OFF", r.created_by || "", r.created_at ? new Date(r.created_at).toLocaleString("en-IN") : ""]),
     [headings, rows, menus]);
 
   const add = async (e) => {
