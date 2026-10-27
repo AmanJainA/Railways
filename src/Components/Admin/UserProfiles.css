@@ -35,3 +35,40 @@
 .table td {
   vertical-align: middle;
 }
+
+/* Responsive User Access layout */
+.user-access-page { min-width: 0; }
+.user-access-stats > .user-access-stat-col, .user-access-stat-body { min-width: 0; }
+.user-access-stat-icon { flex-shrink: 0; }
+.user-access-toolbar, .user-access-toolbar .user-access-search, .user-access-toolbar .user-access-role { min-width: 0; }
+
+@media (max-width: 767.98px) {
+  .user-access-stats { --bs-gutter-x: 0.5rem; }
+  .user-access-stat-body { padding: 0.7rem 0.45rem !important; gap: 0.45rem; }
+  .user-access-stat-icon { width: 28px !important; height: 28px !important; margin-right: 0 !important; }
+  .user-access-stat-icon .symbol-label { width: 28px; height: 28px; }
+  .user-access-stat-icon i { font-size: 1rem !important; }
+  .user-access-stat-body > div:last-child { min-width: 0; }
+  .user-access-stat-body .fs-2hx { font-size: clamp(1rem, 4.5vw, 1.45rem) !important; line-height: 1.15; }
+  .user-access-stat-body .fs-6 { font-size: clamp(0.58rem, 2.4vw, 0.75rem) !important; line-height: 1.2; overflow-wrap: anywhere; }
+  .user-access-toolbar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.5rem !important; width: 100%; padding: 0 0.9rem 0.9rem;
+  }
+  .user-access-toolbar .user-access-search { grid-column: 1 / -1; width: 100% !important; }
+  .user-access-toolbar .user-access-role { width: 100% !important; }
+  .user-access-toolbar .user-access-role .form-select { min-width: 0; padding-left: 0.45rem; padding-right: 1.5rem; font-size: 0.75rem; }
+  .user-access-toolbar .user-access-export, .user-access-toolbar .user-access-add {
+    width: 100%; min-width: 0; justify-content: center; padding: 0.65rem 0.35rem; font-size: 0.7rem; white-space: nowrap;
+  }
+  .user-access-toolbar .user-access-export i, .user-access-toolbar .user-access-add i { display: none; }
+  .user-access-toolbar .menu-sub-dropdown { right: 33% !important; max-width: calc(100vw - 2rem); }
+  .user-access-page .card-header { flex-wrap: wrap; gap: 0.75rem; }
+  .user-access-page .card-header .card-title { width: 100%; }
+}
+@media (max-width: 359.98px) {
+  .user-access-stat-body { flex-direction: column; align-items: flex-start !important; }
+  .user-access-stat-body .fs-6 { font-size: 0.6rem !important; }
+  .user-access-toolbar .user-access-export, .user-access-toolbar .user-access-add { font-size: 0.64rem; }
+}
